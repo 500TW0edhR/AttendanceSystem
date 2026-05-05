@@ -197,7 +197,7 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
 
   const submitRequest = async (e: any) => {
     e.preventDefault();
-    setLoading(true); // 送信中フラグを立てる
+    setIsLoading(true); // 修正：正しくは setIsLoading
     
     try {
       const formData = new FormData(e.currentTarget);
@@ -207,14 +207,16 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
 
       if (!date) {
         showToast("対象日を入力してください", "danger");
-        setLoading(false);
+        setIsLoading(false);
         return;
       }
+
+      showToast("送信中...", "info");
 
       if (isDemoMode) {
         showToast("デモモード：申請を送信しました", "success");
         setRequestSubTab('list');
-        setLoading(false);
+        setIsLoading(false);
         return;
       }
 
@@ -238,7 +240,7 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
       console.error('Unexpected error:', err);
       showToast(`予期せぬエラー: ${err.message}`, "danger");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
