@@ -197,31 +197,48 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
 
   const submitRequest = async (e: any) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const type = formData.get('type') as string;
-    const date = formData.get('date') as string;
-    const reason = formData.get('reason') as string;
+    setLoading(true); // 送信中フラグを立てる
+    
+    try {
+      const formData = new FormData(e.currentTarget);
+      const type = formData.get('type') as string;
+      const date = formData.get('date') as string;
+      const reason = formData.get('reason') as string;
 
-    if (isDemoMode) {
-      showToast("デモモード：申請を送信しました", "success");
-      setRequestSubTab('list');
-      return;
-    }
+      if (!date) {
+        showToast("対象日を入力してください", "danger");
+        setLoading(false);
+        return;
+      }
 
-    const { error } = await supabase.from('applications').insert({
-      user_id: userId,
-      type,
-      target_date: date,
-      reason,
-      status: 'pending'
-    });
+      if (isDemoMode) {
+        showToast("デモモード：申請を送信しました", "success");
+        setRequestSubTab('list');
+        setLoading(false);
+        return;
+      }
 
-    if (!error) {
-      showToast("申請を送信しました", "success");
-      fetchData();
-      setRequestSubTab('list');
-    } else {
-      showToast("送信に失敗しました", "danger");
+      const { error } = await supabase.from('applications').insert({
+        user_id: userId,
+        type,
+        target_date: date,
+        reason: reason || '',
+        status: 'pending'
+      });
+
+      if (error) {
+        console.error('Submission error:', error);
+        showToast(`送信失敗: ${error.message}`, "danger");
+      } else {
+        showToast("申請を送信しました", "success");
+        fetchData();
+        setRequestSubTab('list');
+      }
+    } catch (err: any) {
+      console.error('Unexpected error:', err);
+      showToast(`予期せぬエラー: ${err.message}`, "danger");
+    } finally {
+      setLoading(false);
     }
   };
 
