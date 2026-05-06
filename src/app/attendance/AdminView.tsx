@@ -40,12 +40,13 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
       .channel('admin_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, (payload) => {
         console.log('Realtime INSERT/UPDATE: applications', payload);
+        showToast("新しい申請データを受信しました", "info");
         fetchApplications();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, (payload) => {
         console.log('Realtime INSERT/UPDATE: attendances', payload);
-        // 打刻は画面全体をリフレッシュするのが一番確実
-        window.location.reload();
+        showToast("打刻データを受信しました。画面を更新します", "info");
+        setTimeout(() => window.location.reload(), 1500);
       })
       .subscribe((status) => {
         console.log('Realtime status:', status);
