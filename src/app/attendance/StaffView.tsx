@@ -1,10 +1,21 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 
+// 独立した時計コンポーネント（これ単体で1秒ごとに再描画されるため、親画面全体は重くならない）
+const Clock = () => {
+  const [time, setTime] = useState('');
+  useEffect(() => {
+    const tokyoTimeFormatter = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', hour12: false });
+    const timer = setInterval(() => setTime(tokyoTimeFormatter.format(new Date())), 1000);
+    setTime(tokyoTimeFormatter.format(new Date())); // 初回表示
+    return () => clearInterval(timer);
+  }, []);
+  return <div className="clock-time">{time || '...'}</div>;
+};
+
 export default function StaffView({ showToast, userEmail, userId, supabase, isDemoMode }: any) {
   const [activeTab, setActiveTab] = useState('home');
   const [requestSubTab, setRequestSubTab] = useState('form');
-  const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDateString, setCurrentDateString] = useState<string>('');
   const [todayRecord, setTodayRecord] = useState<any>(null);
   
@@ -158,12 +169,7 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
 
   useEffect(() => {
     setCurrentDateString(new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }));
-    const timer = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
-    }, 1000);
     fetchData();
-    return () => clearInterval(timer);
   }, [userId, isDemoMode]);
 
   useEffect(() => {
@@ -178,10 +184,30 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
 
   const punchMark = async (type: string) => {
     if (type === 'absent') { setActiveTab('request'); return; }
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const tzoffset = now.getTimezoneOffset() * 60000;
-    const todayDate = (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+    
+    // 外部APIを使用して正確な時間を取得（フォールバック付き）
+    let now = new Date();
+    try {
+      // タイムアウト付きのフェッチ
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2秒でタイムアウト
+      const res = await fetch('https://worldtimeapi.org/api/timezone/Asia/Tokyo', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        now = new Date(data.datetime);
+      }
+    } catch (e) {
+      console.warn("Time API fetch failed, falling back to local time", e);
+    }
+
+    // 取得した時間（またはローカル時間）を強制的に日本のタイムゾーン文字列に変換
+    const tokyoTimeFormatter = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', hour12: false });
+    const timeStr = tokyoTimeFormatter.format(now);
+    
+    // YYYY-MM-DD 形式の日本時間文字列を取得
+    const tokyoDateFormatter = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const todayDate = tokyoDateFormatter.format(now).replace(/\//g, '-');
 
     if (type === 'in') {
       if (todayRecord?.punch_in) { showToast("出勤打刻済みです", 'warning'); return; }
@@ -416,7 +442,7 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
           <div style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{displayName} さん</div>
           <div style={{ fontSize: '14px', color: 'var(--gray)' }}>{currentDateString}</div>
         </div>
-        <div className="clock-time">{currentTime || '...'}</div>
+        <Clock />
       </header>
       <div className="staff-content" style={{ display: 'block' }}>{renderContent()}</div>
       <nav className="tab-bar">
