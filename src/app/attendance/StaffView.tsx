@@ -231,7 +231,7 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
         user_id: userId,
         type,
         target_date: date,
-        reason: reason || '',
+        // reason: reason || '', // 一旦コメントアウトして原因を切り分け
         status: 'pending'
       }).select();
 
