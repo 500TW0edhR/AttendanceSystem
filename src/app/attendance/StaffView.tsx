@@ -197,7 +197,11 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
 
   const submitRequest = async (e: any) => {
     e.preventDefault();
-    setIsLoading(true); // 修正：正しくは setIsLoading
+    
+    // デバッグ用：最初の反応を確認
+    alert("送信ボタンが押されました");
+    
+    setIsLoading(true);
     
     try {
       const formData = new FormData(e.currentTarget);
@@ -205,8 +209,10 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
       const date = formData.get('date') as string;
       const reason = formData.get('reason') as string;
 
+      alert(`データ確認:\n種類: ${type}\n日付: ${date}\n理由: ${reason}`);
+
       if (!date) {
-        showToast("対象日を入力してください", "danger");
+        alert("エラー: 対象日が入力されていません");
         setIsLoading(false);
         return;
       }
@@ -214,30 +220,34 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
       showToast("送信中...", "info");
 
       if (isDemoMode) {
+        alert("デモモードで動作中");
         showToast("デモモード：申請を送信しました", "success");
         setRequestSubTab('list');
         setIsLoading(false);
         return;
       }
 
-      const { error } = await supabase.from('applications').insert({
+      const { data, error } = await supabase.from('applications').insert({
         user_id: userId,
         type,
         target_date: date,
         reason: reason || '',
         status: 'pending'
-      });
+      }).select();
 
       if (error) {
         console.error('Submission error:', error);
+        alert(`送信失敗(Supabaseエラー):\n${error.message}\nCode: ${error.code}`);
         showToast(`送信失敗: ${error.message}`, "danger");
       } else {
+        alert("送信成功！データベースに保存されました");
         showToast("申請を送信しました", "success");
         fetchData();
         setRequestSubTab('list');
       }
     } catch (err: any) {
       console.error('Unexpected error:', err);
+      alert(`予期せぬエラーが発生しました:\n${err.message}`);
       showToast(`予期せぬエラー: ${err.message}`, "danger");
     } finally {
       setIsLoading(false);
