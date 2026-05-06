@@ -53,7 +53,10 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
     setToastMsg(msg);
     setToastType(type);
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 3500);
+    // エラー以外は3.5秒で消す、エラーは手動で閉じるまで残す
+    if (type !== 'danger') {
+      setTimeout(() => setShowToast(false), 3500);
+    }
   };
 
   const getDeviceClass = () => {
@@ -106,8 +109,26 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
         </div>
       </div>
 
-      <div className={`toast-msg ${showToast ? 'show' : ''}`} style={{ background: toastType === 'danger' ? 'var(--danger)' : toastType === 'info' ? 'var(--primary)' : 'var(--success)' }}>
-        {toastMsg}
+      <div className={`toast-msg ${showToast ? 'show' : ''}`} style={{ 
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: showToast ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.9)',
+        width: '90%',
+        maxWidth: '400px',
+        zIndex: 9999,
+        padding: '30px 20px',
+        borderRadius: '16px',
+        textAlign: 'center',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        lineHeight: '1.5',
+        background: toastType === 'danger' ? 'var(--danger)' : toastType === 'info' ? 'var(--primary)' : 'var(--success)' 
+      }}>
+        <div style={{ marginBottom: '15px' }}>{toastType === 'danger' ? '⚠️ ERROR' : toastType === 'info' ? 'ℹ️ INFO' : '✅ SUCCESS'}</div>
+        <div>{toastMsg}</div>
+        <button onClick={() => setShowToast(false)} style={{ marginTop: '20px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: 'white', padding: '8px 20px', borderRadius: '8px', fontSize: '14px' }}>閉じる</button>
       </div>
 
       {view === 'staff' ? (
