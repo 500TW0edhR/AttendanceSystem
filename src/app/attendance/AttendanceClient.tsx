@@ -21,7 +21,16 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
   const [loading, setLoading] = useState(true);
 
   const supabase = React.useMemo(() => createClient(), []);
-  const todayStr = new Date().toISOString().split('T')[0];
+  
+  // 常に日本時間の今日の日付 (YYYY-MM-DD) を取得
+  const todayStr = React.useMemo(() => {
+    return new Intl.DateTimeFormat('ja-JP', { 
+      timeZone: 'Asia/Tokyo', 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit' 
+    }).format(new Date()).replace(/\//g, '-');
+  }, []);
 
   // No.0000の固定ID
   const DEMO_USER_ID = 'd0000000-0000-0000-0000-000000000000';
