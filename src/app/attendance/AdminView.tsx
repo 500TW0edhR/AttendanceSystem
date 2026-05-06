@@ -40,21 +40,14 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
       .channel('admin_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, (payload) => {
         console.log('Realtime INSERT/UPDATE: applications', payload);
-        showToast("新しい申請データを受信しました", "info");
         fetchApplications();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, (payload) => {
         console.log('Realtime INSERT/UPDATE: attendances', payload);
-        showToast("打刻データを受信しました。画面を更新します", "info");
-        setTimeout(() => window.location.reload(), 1500);
+        window.location.reload();
       })
       .subscribe((status) => {
         console.log('Realtime status:', status);
-        if (status === 'SUBSCRIBED') {
-          showToast("リアルタイム通信が確立されました", "info");
-        } else if (status === 'CHANNEL_ERROR') {
-          showToast("リアルタイム通信に失敗しました。再試行します", "danger");
-        }
       });
 
     // 初回またはデモ切り替え時のみ初期化
