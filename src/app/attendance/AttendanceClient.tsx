@@ -111,24 +111,23 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
 
       <div className={`toast-msg ${showToast ? 'show' : ''}`} style={{ 
         position: 'fixed',
-        top: '50%',
+        top: '30px',
         left: '50%',
-        transform: showToast ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.9)',
-        width: '90%',
-        maxWidth: '400px',
+        transform: 'translateX(-50%)',
         zIndex: 9999,
-        padding: '30px 20px',
-        borderRadius: '16px',
+        padding: '12px 24px',
+        borderRadius: '30px',
         textAlign: 'center',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-        fontSize: '16px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+        fontSize: '14px',
         fontWeight: 'bold',
-        lineHeight: '1.5',
-        background: toastType === 'danger' ? 'var(--danger)' : toastType === 'info' ? 'var(--primary)' : 'var(--success)' 
+        color: 'white',
+        background: toastType === 'danger' ? 'var(--danger)' : toastType === 'info' ? 'var(--primary)' : 'var(--success)',
+        opacity: showToast ? 1 : 0,
+        pointerEvents: 'none',
+        transition: 'all 0.3s ease'
       }}>
-        <div style={{ marginBottom: '15px' }}>{toastType === 'danger' ? '⚠️ ERROR' : toastType === 'info' ? 'ℹ️ INFO' : '✅ SUCCESS'}</div>
-        <div>{toastMsg}</div>
-        <button onClick={() => setShowToast(false)} style={{ marginTop: '20px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: 'white', padding: '8px 20px', borderRadius: '8px', fontSize: '14px' }}>閉じる</button>
+        {toastMsg}
       </div>
 
       {view === 'staff' ? (

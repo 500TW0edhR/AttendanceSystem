@@ -211,7 +211,7 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
         return;
       }
 
-      showToast("送信中...", "info");
+      // showToast("送信中...", "info");
 
       if (isDemoMode) {
         showToast("デモモード：申請を送信しました", "success");
