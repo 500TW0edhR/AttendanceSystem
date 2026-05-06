@@ -20,7 +20,7 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
   const [allData, setAllData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
+  const supabase = React.useMemo(() => createClient(), []);
   const todayStr = new Date().toISOString().split('T')[0];
 
   // No.0000の固定ID
@@ -111,21 +111,21 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
 
       <div className={`toast-msg ${showToast ? 'show' : ''}`} style={{ 
         position: 'fixed',
-        top: '30px',
+        top: showToast ? '30px' : '-100px',
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 9999,
+        zIndex: 10000,
         padding: '12px 24px',
         borderRadius: '30px',
         textAlign: 'center',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
         fontSize: '14px',
         fontWeight: 'bold',
         color: 'white',
         background: toastType === 'danger' ? 'var(--danger)' : toastType === 'info' ? 'var(--primary)' : 'var(--success)',
         opacity: showToast ? 1 : 0,
         pointerEvents: 'none',
-        transition: 'all 0.3s ease'
+        transition: 'all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
       }}>
         {toastMsg}
       </div>
