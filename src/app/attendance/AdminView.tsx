@@ -38,16 +38,23 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     // リアルタイム購読の設定
     const channel = supabase
       .channel('admin_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
-        console.log('Realtime update: applications');
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, (payload) => {
+        console.log('Realtime INSERT/UPDATE: applications', payload);
         fetchApplications();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, () => {
-        console.log('Realtime update: attendances');
-        // 親から渡された allData は即座には更新されないため、必要に応じて独自に再取得するロジックを追加可能
-        window.location.reload(); // 最も確実な方法として、一旦リロードをかける（またはfetchDataを親から渡す）
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, (payload) => {
+        console.log('Realtime INSERT/UPDATE: attendances', payload);
+        // 打刻は画面全体をリフレッシュするのが一番確実
+        window.location.reload();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime status:', status);
+        if (status === 'SUBSCRIBED') {
+          showToast("リアルタイム通信が確立されました", "info");
+        } else if (status === 'CHANNEL_ERROR') {
+          showToast("リアルタイム通信に失敗しました。再試行します", "danger");
+        }
+      });
 
     // 初回またはデモ切り替え時のみ初期化
     if (Object.keys(localDemoShifts).length === 0 || isDemoMode) {
