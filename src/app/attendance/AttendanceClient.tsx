@@ -27,11 +27,13 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
   const DEMO_USER_ID = 'd0000000-0000-0000-0000-000000000000';
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchData = async () => {
       setLoading(true);
       // プロフィール取得
       const { data: pData } = await supabase.from('profiles').select('role, status, id, full_name, employee_id, branch, employment_type').eq('id', userId).single();
-      if (pData) {
+      if (pData && isMounted) {
         if (pData.role) setRole(pData.role as 'user' | 'admin');
         if (pData.status === '招待中') {
           await supabase.from('profiles').update({ status: '在籍' }).eq('id', userId);
@@ -42,11 +44,28 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
       const { data: allP } = await supabase.from('profiles').select('*').order('employee_id', { ascending: true });
       const { data: allA } = await supabase.from('attendances').select('*').eq('target_date', todayStr);
       
-      if (allP) setProfiles(allP);
-      if (allA) setAllData(allA);
-      setLoading(false);
+      if (isMounted) {
+        if (allP) setProfiles(allP);
+        if (allA) setAllData(allA);
+        setLoading(false);
+      }
     };
+    
     fetchData();
+
+    // 管理者画面用のリアルタイム更新（強制リロード回避用）
+    const channel = supabase
+      .channel('client_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, () => {
+        // データが届いたら、裏側でスッと再取得する（リロードさせない）
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
   }, [userId, supabase, todayStr]);
 
   const triggerToast = (msg: string, type: string = 'success') => {

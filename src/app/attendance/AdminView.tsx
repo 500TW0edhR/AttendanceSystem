@@ -35,16 +35,12 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     fetchShifts();
     setSelectedApp(null); 
     
-    // リアルタイム購読の設定
+    // リアルタイム購読の設定 (applicationsはAdminView内で自己完結)
     const channel = supabase
       .channel('admin_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, (payload) => {
         console.log('Realtime INSERT/UPDATE: applications', payload);
         fetchApplications();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, (payload) => {
-        console.log('Realtime INSERT/UPDATE: attendances', payload);
-        window.location.reload();
       })
       .subscribe((status) => {
         console.log('Realtime status:', status);
