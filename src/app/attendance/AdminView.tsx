@@ -35,6 +35,20 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     fetchShifts();
     setSelectedApp(null); 
     
+    // リアルタイム購読の設定
+    const channel = supabase
+      .channel('admin_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
+        console.log('Realtime update: applications');
+        fetchApplications();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, () => {
+        console.log('Realtime update: attendances');
+        // 親から渡された allData は即座には更新されないため、必要に応じて独自に再取得するロジックを追加可能
+        window.location.reload(); // 最も確実な方法として、一旦リロードをかける（またはfetchDataを親から渡す）
+      })
+      .subscribe();
+
     // 初回またはデモ切り替え時のみ初期化
     if (Object.keys(localDemoShifts).length === 0 || isDemoMode) {
       setLocalDemoShifts(demoShifts || {});
@@ -47,7 +61,11 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
         'mock-f2': { 2: 'L', 4: 'L', 6: 'L', 0: 'O', 1: 'O', 3: 'O', 5: 'O' }  // 火木土：遅番
       });
     }
-  }, [isDemoMode, currentDate?.getMonth()]);
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isDemoMode, currentDate?.getMonth(), supabase]);
 
   const fetchShifts = async () => {
     if (isDemoMode) return;
