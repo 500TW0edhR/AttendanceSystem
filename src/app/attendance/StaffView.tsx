@@ -448,7 +448,7 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
             )}
             <div style={{ fontSize: '11px', color: 'var(--gray)', opacity: 0.8 }}>{currentDateString}</div>
           </div>
-          <div style={{ fontWeight: 'bold', color: 'var(--dark)', fontSize: '18px', lineHeight: '1.2' }}>{displayName} さん</div>
+          <div style={{ fontWeight: 'bold', color: 'var(--dark)', fontSize: '18px', lineHeight: '1.2' }}>{displayName}</div>
         </div>
         <Clock />
       </header>
