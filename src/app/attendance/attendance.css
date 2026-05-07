@@ -84,7 +84,7 @@
 .clock-section { background: white; padding: 50px 20px 30px; text-align: center; border-bottom: 1px solid #eee; flex-shrink: 0; }
 .mode-tablet .clock-section, .mode-pc .clock-section { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; }
 .mode-pc .clock-section { grid-column: 2 / 3; grid-row: 1 / 2; border-bottom: 1px solid #e2e8f0; }
-.clock-time { font-size: 52px; font-weight: 800; color: #1e293b; letter-spacing: -1px; line-height: 1; }
+.clock-time { font-size: 38px; font-weight: 800; color: #1e293b; letter-spacing: -1px; line-height: 1; }
 
 /* スタッフ側 メインコンテンツ */
 .staff-content { flex: 1; overflow-y: auto; padding: 25px 20px; padding-bottom: 100px; }

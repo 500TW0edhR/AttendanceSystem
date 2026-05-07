@@ -438,13 +438,17 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
 
   return (
     <>
-      <header className="clock-section">
-        <div style={{ textAlign: 'left', flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            {SITE_CONFIG.companyName && <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>{SITE_CONFIG.companyName}</div>}
-            <div style={{ fontSize: '11px', color: 'var(--gray)' }}>{currentDateString}</div>
+      <header className="clock-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', padding: '20px' }}>
+        <div style={{ textAlign: 'left', flex: 1, marginRight: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px', flexWrap: 'wrap' }}>
+            {(isDemoMode || SITE_CONFIG.companyName) && (
+              <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold' }}>
+                {isDemoMode ? (SITE_CONFIG.companyName || '株式会社デモ') : SITE_CONFIG.companyName}
+              </div>
+            )}
+            <div style={{ fontSize: '11px', color: 'var(--gray)', opacity: 0.8 }}>{currentDateString}</div>
           </div>
-          <div style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '18px' }}>{displayName} さん</div>
+          <div style={{ fontWeight: 'bold', color: 'var(--dark)', fontSize: '18px', lineHeight: '1.2' }}>{displayName} さん</div>
         </div>
         <Clock />
       </header>
