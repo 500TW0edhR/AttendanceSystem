@@ -81,8 +81,8 @@
 .mode-tablet #sc-login { align-items: center; }
 
 /* スタッフ側 ヘッダー */
-.clock-section { background: white; padding: 50px 20px 30px; text-align: center; border-bottom: 1px solid #eee; flex-shrink: 0; }
-.mode-tablet .clock-section, .mode-pc .clock-section { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; }
+.clock-section { background: white !important; padding: 20px !important; text-align: left !important; border-bottom: 1px solid #eee; flex-shrink: 0; display: flex !important; justify-content: space-between !important; align-items: center !important; }
+.mode-tablet .clock-section, .mode-pc .clock-section { padding: 20px 40px !important; }
 .mode-pc .clock-section { grid-column: 2 / 3; grid-row: 1 / 2; border-bottom: 1px solid #e2e8f0; }
 .clock-time { font-size: 38px; font-weight: 800; color: #1e293b; letter-spacing: -1px; line-height: 1; }
 
