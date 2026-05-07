@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { SITE_CONFIG } from '@/config/site';
 
 // セクションコンポーネントのインポート
 import AttendanceList from './admin/sections/AttendanceList';
@@ -16,8 +15,9 @@ import HelpGuide from './admin/sections/HelpGuide';
 
 const PREFECTURES = ['東京', '大阪', '名古屋', '福岡', '横浜', '札幌', '仙台', '千葉', '埼玉', '広島'];
 
-export default function AdminView({ profiles = [], allData = [], todayDate, isDemoMode, demoShifts = {}, showToast, realAdminId }: any) {
+export default function AdminView({ profiles = [], allData = [], todayDate, isDemoMode, demoShifts = {}, showToast, realAdminId, companyName, updateCompanyName }: any) {
   const [activeSec, setActiveSec] = useState('sec-list');
+  const [settingName, setSettingName] = useState(companyName || '');
   const [filterBranch, setFilterBranch] = useState('ALL');
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
@@ -31,39 +31,34 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
   const [shiftPatterns, setShiftPatterns] = useState<any>({});
 
   useEffect(() => {
+    setSettingName(companyName || '');
     setCurrentDate(new Date());
     fetchApplications();
     fetchShifts();
     setSelectedApp(null); 
     
-    // リアルタイム購読の設定 (applicationsはAdminView内で自己完結)
     const channel = supabase
       .channel('admin_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, (payload) => {
-        console.log('Realtime INSERT/UPDATE: applications', payload);
         fetchApplications();
       })
-      .subscribe((status) => {
-        console.log('Realtime status:', status);
-      });
+      .subscribe();
 
-    // 初回またはデモ切り替え時のみ初期化
     if (Object.keys(localDemoShifts).length === 0 || isDemoMode) {
       setLocalDemoShifts(demoShifts || {});
     }
     
-    // デモ用の初期パターン設定 (外国籍スタッフ)
     if (isDemoMode) {
       setShiftPatterns({
-        'mock-f1': { 1: 'R', 3: 'R', 5: 'R', 0: 'O', 2: 'O', 4: 'O', 6: 'O' }, // 月水金：日勤
-        'mock-f2': { 2: 'L', 4: 'L', 6: 'L', 0: 'O', 1: 'O', 3: 'O', 5: 'O' }  // 火木土：遅番
+        'mock-f1': { 1: 'R', 3: 'R', 5: 'R', 0: 'O', 2: 'O', 4: 'O', 6: 'O' },
+        'mock-f2': { 2: 'L', 4: 'L', 6: 'L', 0: 'O', 1: 'O', 3: 'O', 5: 'O' }
       });
     }
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isDemoMode, currentDate?.getMonth(), supabase]);
+  }, [isDemoMode, currentDate?.getMonth(), supabase, companyName]);
 
   const fetchShifts = async () => {
     if (isDemoMode) return;
@@ -106,7 +101,6 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     setLocalDemoShifts((prev: any) => ({ ...prev, ...updates }));
     
     if (!isDemoMode) {
-      // DB一括更新
       const bulkData = Object.entries(updates).map(([key, type]) => {
         const [pId, y, m, d] = key.split('-');
         const targetDate = new Date(parseInt(y), parseInt(m), parseInt(d)).toISOString().split('T')[0];
@@ -135,7 +129,6 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     const month = currentDate?.getMonth() || new Date().getMonth();
     const key = `${pId}-${year}-${month}-${day}`;
     
-    // UIを即時更新
     setLocalDemoShifts((prev: any) => ({ ...prev, [key]: type }));
 
     if (!isDemoMode) {
@@ -165,13 +158,12 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     }
   };
 
+  const pendingCount = isDemoMode ? 3 : applications.filter(a => a.status === 'pending').length;
+
   const renderSection = () => {
-    // デモモード用の拡張プロフィールリストを作成
-    // デモモード用の拡張プロフィールリストを作成
     let augmentedProfiles: any[] = [];
     
     if (isDemoMode) {
-      // デモモード：デモ社員のみ（あなた自身の本名プロフは除外）
       const demoStaff = profiles.filter((p: any) => p.is_demo);
       augmentedProfiles = [...demoStaff];
       
@@ -200,8 +192,42 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
       augmentedProfiles.splice(6, 0, foreignStaff2);
       augmentedProfiles.splice(9, 0, foreignStaff1);
     } else {
-      // 本番モード：本物の社員のみ
       augmentedProfiles = profiles.filter((p: any) => !p.is_demo);
+    }
+
+    if (activeSec === 'sec-settings') {
+      return (
+        <div className="admin-section active">
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><span style={{ fontSize: '24px' }}>⚙️</span> システム設定</h2>
+          <p style={{ color: 'var(--gray)', marginBottom: '20px' }}>システム全体で共通利用する設定を管理します。</p>
+          
+          <div className="card" style={{ maxWidth: '600px' }}>
+            <h3 style={{ fontSize: '16px', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '20px' }}>🏢 会社情報の表示設定</h3>
+            <div className="form-group">
+              <label>会社名</label>
+              <input 
+                type="text" 
+                value={settingName} 
+                onChange={(e) => setSettingName(e.target.value)} 
+                placeholder="例：株式会社デモ" 
+                style={{ padding: '12px', fontSize: '16px', width: '100%' }}
+              />
+              <p style={{ fontSize: '12px', color: 'var(--gray)', marginTop: '8px', lineHeight: '1.5' }}>
+                ※ここで設定した会社名が、スタッフのスマホ画面および管理者画面の左上に表示されます。<br/>
+                ※空欄にした場合は、本番環境では「Admin」、デモモードでは「株式会社デモ」と表示されます。
+              </p>
+            </div>
+            
+            <button 
+              className="btn-rect" 
+              style={{ background: '#2563eb', color: 'white', height: '40px', minHeight: 'auto', padding: '0 20px', borderRadius: '8px', marginTop: '10px' }} 
+              onClick={() => updateCompanyName && updateCompanyName(settingName)}
+            >
+              設定を保存する
+            </button>
+          </div>
+        </div>
+      );
     }
 
     switch (activeSec) {
@@ -242,11 +268,11 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
             onDateChange={(newDate: Date) => setCurrentDate(newDate)}
           />
         );
-      case 'sec-master':
+      case 'sec-staff':
         return <StaffMaster profiles={augmentedProfiles} isDemoMode={isDemoMode} supabase={supabase} showToast={showToast} />;
       case 'sec-report':
         return <ReportAnalysis isDemoMode={isDemoMode} />;
-      case 'sec-data':
+      case 'sec-integration':
         return <DataIntegration showToast={showToast} />;
       case 'sec-notice':
         return <NoticeManagement isDemoMode={isDemoMode} showToast={showToast} />;
@@ -269,8 +295,8 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
       </div>
 
       <aside className="sidebar" style={{ display: 'flex', flexDirection: 'column' }}>
-        <h1 style={{ color: 'white', fontSize: (isDemoMode || SITE_CONFIG.companyName) ? '22px' : '30px', padding: '30px 20px', fontWeight: '900', margin: 0, lineHeight: 1.3 }}>
-          {isDemoMode ? (SITE_CONFIG.companyName || '株式会社デモ') : (SITE_CONFIG.companyName || 'Admin')}
+        <h1 style={{ color: 'white', fontSize: (isDemoMode || companyName) ? '22px' : '30px', padding: '30px 20px', fontWeight: '900', margin: 0, lineHeight: 1.3 }}>
+          {isDemoMode ? (companyName || '株式会社デモ') : (companyName || 'Admin')}
         </h1>
         <nav id="admin-nav" style={{ padding: '0 10px', flex: 1 }}>
           <p className={activeSec === 'sec-list' ? 'active' : ''} onClick={() => setActiveSec('sec-list')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#10b981', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📊</span>{isDemoMode ? 'デモ勤怠一覧' : '勤怠一覧管理'}</span></p>
@@ -280,18 +306,19 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
                 <span style={{ width: '26px', height: '26px', background: '#ef4444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📩</span>
                 {isDemoMode ? 'デモ申請承認' : '申請承認'}
               </span>
-              {(isDemoMode ? 3 : applications.filter(a => a.status === 'pending').length) > 0 && (
+              {pendingCount > 0 && (
                 <span style={{ background: '#ef4444', color: 'white', fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '50px' }}>
-                  {isDemoMode ? 3 : applications.filter(a => a.status === 'pending').length}
+                  {pendingCount}
                 </span>
               )}
             </span>
           </p>
           <p className={activeSec === 'sec-shift' ? 'active' : ''} onClick={() => setActiveSec('sec-shift')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#3b82f6', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📅</span>シフト管理</span></p>
-          <p className={activeSec === 'sec-master' ? 'active' : ''} onClick={() => setActiveSec('sec-master')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#a855f7', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>👥</span>社員マスタ</span></p>
+          <p className={activeSec === 'sec-staff' ? 'active' : ''} onClick={() => setActiveSec('sec-staff')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#a855f7', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>👥</span>社員マスタ</span></p>
           <p className={activeSec === 'sec-report' ? 'active' : ''} onClick={() => setActiveSec('sec-report')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#3b82f6', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📈</span>レポート分析</span></p>
           <p className={activeSec === 'sec-notice' ? 'active' : ''} onClick={() => setActiveSec('sec-notice')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#f59e0b', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🔔</span>お知らせ管理</span></p>
-          <p className={activeSec === 'sec-data' ? 'active' : ''} onClick={() => setActiveSec('sec-data')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#a855f7', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>💾</span>データ連携</span></p>
+          <p className={activeSec === 'sec-integration' ? 'active' : ''} onClick={() => setActiveSec('sec-integration')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#a855f7', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>💾</span>データ連携</span></p>
+          <p className={activeSec === 'sec-settings' ? 'active' : ''} onClick={() => setActiveSec('sec-settings')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#64748b', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>⚙️</span>システム設定</span></p>
           <div style={{ marginTop: '30px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
             <p className={activeSec === 'sec-help' ? 'active' : ''} onClick={() => setActiveSec('sec-help')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#10b981', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📖</span>使い方ガイド</span></p>
           </div>

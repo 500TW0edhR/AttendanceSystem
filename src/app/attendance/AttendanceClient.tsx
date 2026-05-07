@@ -18,6 +18,7 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
   const [role, setRole] = useState<'user' | 'admin'>('user');
   const [profiles, setProfiles] = useState<any[]>([]);
   const [allData, setAllData] = useState<any[]>([]);
+  const [companyName, setCompanyName] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   const supabase = React.useMemo(() => createClient(), []);
@@ -49,13 +50,15 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
         }
       }
 
-      // 管理者用の全データ取得
+      // 管理者用の全データとシステム設定の取得
       const { data: allP } = await supabase.from('profiles').select('*').order('employee_id', { ascending: true });
       const { data: allA } = await supabase.from('attendances').select('*').eq('target_date', todayStr);
+      const { data: setD } = await supabase.from('settings').select('company_name').eq('id', 'system').maybeSingle();
       
       if (isMounted) {
         if (allP) setProfiles(allP);
         if (allA) setAllData(allA);
+        if (setD && setD.company_name) setCompanyName(setD.company_name);
         setLoading(false);
       }
     };
@@ -91,6 +94,17 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
     if (device === 'mobile') return 'mode-mobile';
     if (device === 'tablet') return 'mode-tablet';
     return 'mode-pc';
+  };
+
+  const updateCompanyName = async (newName: string) => {
+    const { error } = await supabase.from('settings').update({ company_name: newName }).eq('id', 'system');
+    if (!error) {
+      setCompanyName(newName);
+      triggerToast("会社名を保存しました！", "success");
+    } else {
+      triggerToast("保存に失敗しました", "danger");
+      console.error(error);
+    }
   };
 
   if (loading) {
@@ -166,6 +180,7 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
             userId={isDemoMode ? DEMO_USER_ID : userId} 
             supabase={supabase}
             isDemoMode={isDemoMode}
+            companyName={companyName}
           />
         </div>
       ) : (
@@ -179,6 +194,8 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
             allData={allData}
             todayDate={todayStr}
             demoShifts={{}}
+            companyName={companyName}
+            updateCompanyName={updateCompanyName}
           />
         </div>
       )}

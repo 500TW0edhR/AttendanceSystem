@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { SITE_CONFIG } from '@/config/site';
+import React, { useState, useEffect } from 'react';
 
 // 独立した時計コンポーネント（これ単体で1秒ごとに再描画されるため、親画面全体は重くならない）
 const Clock = () => {
@@ -14,7 +14,7 @@ const Clock = () => {
   return <div className="clock-time">{time || '...'}</div>;
 };
 
-export default function StaffView({ showToast, userEmail, userId, supabase, isDemoMode }: any) {
+export default function StaffView({ showToast, userEmail, userId, supabase, isDemoMode, companyName }: any) {
   const [activeTab, setActiveTab] = useState('home');
   const [requestSubTab, setRequestSubTab] = useState('form');
   const [currentDateString, setCurrentDateString] = useState<string>('');
@@ -441,9 +441,9 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
       <header className="clock-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', padding: '20px' }}>
         <div style={{ textAlign: 'left', flex: 1, marginRight: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px', flexWrap: 'wrap' }}>
-            {(isDemoMode || SITE_CONFIG.companyName) && (
+            {(isDemoMode || companyName) && (
               <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold' }}>
-                {isDemoMode ? (SITE_CONFIG.companyName || '株式会社デモ') : SITE_CONFIG.companyName}
+                {isDemoMode ? (companyName || '株式会社デモ') : companyName}
               </div>
             )}
             <div style={{ fontSize: '11px', color: 'var(--gray)', opacity: 0.8 }}>{currentDateString}</div>
