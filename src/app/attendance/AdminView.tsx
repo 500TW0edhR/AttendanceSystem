@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { SITE_CONFIG } from '@/config/site';
 
 // セクションコンポーネントのインポート
 import AttendanceList from './admin/sections/AttendanceList';
@@ -268,7 +269,7 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
       </div>
 
       <aside className="sidebar" style={{ display: 'flex', flexDirection: 'column' }}>
-        <h1 style={{ color: 'white', fontSize: '30px', padding: '30px 20px', fontWeight: '900', margin: 0 }}>Admin</h1>
+        <h1 style={{ color: 'white', fontSize: SITE_CONFIG.companyName ? '22px' : '30px', padding: '30px 20px', fontWeight: '900', margin: 0, lineHeight: 1.3 }}>{SITE_CONFIG.companyName || 'Admin'}</h1>
         <nav id="admin-nav" style={{ padding: '0 10px', flex: 1 }}>
           <p className={activeSec === 'sec-list' ? 'active' : ''} onClick={() => setActiveSec('sec-list')}><span style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><span style={{ width: '26px', height: '26px', background: '#10b981', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📊</span>{isDemoMode ? 'デモ勤怠一覧' : '勤怠一覧管理'}</span></p>
           <p className={activeSec === 'sec-approval' ? 'active' : ''} onClick={() => setActiveSec('sec-approval')}>

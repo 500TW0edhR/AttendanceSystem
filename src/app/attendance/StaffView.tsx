@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { SITE_CONFIG } from '@/config/site';
 
 // 独立した時計コンポーネント（これ単体で1秒ごとに再描画されるため、親画面全体は重くならない）
 const Clock = () => {
@@ -439,8 +440,9 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
     <>
       <header className="clock-section">
         <div style={{ textAlign: 'left' }}>
-          <div style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{displayName} さん</div>
-          <div style={{ fontSize: '14px', color: 'var(--gray)' }}>{currentDateString}</div>
+          {SITE_CONFIG.companyName && <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px', fontWeight: 'bold' }}>{SITE_CONFIG.companyName}</div>}
+          <div style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '18px' }}>{displayName} さん</div>
+          <div style={{ fontSize: '12px', color: 'var(--gray)', marginTop: '2px' }}>{currentDateString}</div>
         </div>
         <Clock />
       </header>
