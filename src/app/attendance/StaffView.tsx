@@ -439,10 +439,12 @@ export default function StaffView({ showToast, userEmail, userId, supabase, isDe
   return (
     <>
       <header className="clock-section">
-        <div style={{ textAlign: 'left' }}>
-          {SITE_CONFIG.companyName && <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px', fontWeight: 'bold' }}>{SITE_CONFIG.companyName}</div>}
+        <div style={{ textAlign: 'left', flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            {SITE_CONFIG.companyName && <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>{SITE_CONFIG.companyName}</div>}
+            <div style={{ fontSize: '11px', color: 'var(--gray)' }}>{currentDateString}</div>
+          </div>
           <div style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '18px' }}>{displayName} さん</div>
-          <div style={{ fontSize: '12px', color: 'var(--gray)', marginTop: '2px' }}>{currentDateString}</div>
         </div>
         <Clock />
       </header>

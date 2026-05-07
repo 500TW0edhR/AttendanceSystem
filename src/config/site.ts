@@ -1,4 +1,4 @@
 export const SITE_CONFIG = {
-  companyName: "株式会社デモ", // ここを空文字 "" にすると、管理画面の左上は「Admin」に戻ります
+  companyName: "", // ここに自社の会社名を入力してください（空の場合は「Admin」になります）
   appName: "勤怠管理システム",
 };
