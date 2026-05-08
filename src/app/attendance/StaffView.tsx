@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import React, { useState, useEffect } from 'react';
 
 // 独立した時計コンポーネント（これ単体で1秒ごとに再描画されるため、親画面全体は重くならない）
 const Clock = () => {
