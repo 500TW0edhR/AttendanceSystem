@@ -291,6 +291,7 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
             realAdminId={realAdminId}
             onUpdateShift={handleUpdateShift}
             onDateChange={(newDate: Date) => setCurrentDate(newDate)}
+            showToast={showToast}
           />
         );
       case 'sec-staff':

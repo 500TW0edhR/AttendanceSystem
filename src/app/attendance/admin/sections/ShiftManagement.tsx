@@ -13,6 +13,7 @@ interface ShiftManagementProps {
   onUpdateShift: (pId: string, day: number, type: string) => Promise<void>;
   onDateChange: (newDate: Date) => void;
   realAdminId?: string;
+  showToast?: (msg: string, type?: string) => void;
 }
 
 export default function ShiftManagement({
@@ -25,7 +26,8 @@ export default function ShiftManagement({
   onBulkUpdateShifts,
   onUpdateShift,
   onDateChange,
-  realAdminId
+  realAdminId,
+  showToast
 }: ShiftManagementProps) {
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -321,6 +323,29 @@ export default function ShiftManagement({
             ))}
           </div>
         </>
+      )}
+
+      {/* 編集モード終了ボタン (フローティング) */}
+      {isEditMode && (
+        <div style={{
+          position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000,
+          animation: 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+        }}>
+          <button 
+            onClick={() => {
+              setIsEditMode(false);
+              setPopover(null);
+              if (showToast) showToast('シフトの変更内容を確定しました', 'success');
+            }}
+            style={{
+              background: EDIT_COLOR, color: 'white', padding: '15px 40px', borderRadius: '50px',
+              fontSize: '18px', fontWeight: 'bold', border: 'none', cursor: 'pointer',
+              boxShadow: '0 10px 25px rgba(16, 185, 129, 0.4)', display: 'flex', alignItems: 'center', gap: '10px'
+            }}
+          >
+            <span style={{ fontSize: '22px' }}>💾</span> 編集モードを終了して保存
+          </button>
+        </div>
       )}
 
       <style jsx>{`
