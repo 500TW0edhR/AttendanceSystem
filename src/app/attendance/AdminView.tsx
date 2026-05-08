@@ -156,13 +156,30 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     showToast(`${day}日のシフトを ${type} に変更しました`, 'success');
   };
 
-  const handleUpdateProfile = async () => {
+  const handleUpdatePunch = async () => {
     if (!selectedProfile) return;
-    const { error } = await supabase.from('profiles').update({ branch: selectedProfile.branch }).eq('id', selectedProfile.id);
-    if (!error) {
-      showToast('社員情報を更新しました', 'success');
+    
+    if (isDemoMode) {
+      showToast('デモモードのため、実際のデータは保存されません', 'info');
       setIsModalOpen(false);
-      window.location.reload();
+      return;
+    }
+
+    const pIn = selectedProfile.punchIn || null;
+    const pOut = selectedProfile.punchOut || null;
+
+    const { error } = await supabase.from('attendances').upsert({
+      user_id: selectedProfile.id,
+      target_date: todayDate,
+      punch_in: pIn === '' ? null : pIn,
+      punch_out: pOut === '' ? null : pOut
+    }, { onConflict: 'user_id,target_date' });
+
+    if (!error) {
+      showToast('打刻時間を修正しました', 'success');
+      setIsModalOpen(false);
+    } else {
+      showToast('更新に失敗しました', 'danger');
     }
   };
 
@@ -338,18 +355,29 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
         <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div className="modal-content card" style={{ width: '500px', padding: '40px', borderRadius: '16px' }}>
             <h2 style={{ marginBottom: '20px' }}>社員詳細: {selectedProfile.full_name}</h2>
-            <div className="form-group">
-              <label>拠点</label>
-              <select 
-                value={selectedProfile.branch} 
-                onChange={e => setSelectedProfile({...selectedProfile, branch: e.target.value})}
-              >
-                {PREFECTURES.map((p: any) => <option key={p} value={p}>{p}</option>)}
-              </select>
+            <div className="form-group" style={{ display: 'flex', gap: '20px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#64748b', fontSize: '14px', fontWeight: 'bold' }}>出勤時間</label>
+                <input 
+                  type="time" 
+                  value={(selectedProfile.punchIn && selectedProfile.punchIn !== '-') ? selectedProfile.punchIn : ''} 
+                  onChange={e => setSelectedProfile({...selectedProfile, punchIn: e.target.value})}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none' }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#64748b', fontSize: '14px', fontWeight: 'bold' }}>退勤時間</label>
+                <input 
+                  type="time" 
+                  value={(selectedProfile.punchOut && selectedProfile.punchOut !== '-') ? selectedProfile.punchOut : ''} 
+                  onChange={e => setSelectedProfile({...selectedProfile, punchOut: e.target.value})}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none' }}
+                />
+              </div>
             </div>
             <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button onClick={() => setIsModalOpen(false)} className="btn-rect" style={{ background: '#eee', color: '#333', height: '40px', minHeight: 'auto', width: 'auto', padding: '0 20px', borderRadius: '8px' }}>閉じる</button>
-              <button onClick={handleUpdateProfile} className="btn-rect" style={{ background: '#2563eb', color: 'white', height: '40px', minHeight: 'auto', width: 'auto', padding: '0 20px', borderRadius: '8px' }}>保存</button>
+              <button onClick={handleUpdatePunch} className="btn-rect" style={{ background: '#2563eb', color: 'white', height: '40px', minHeight: 'auto', width: 'auto', padding: '0 20px', borderRadius: '8px' }}>保存</button>
             </div>
           </div>
         </div>

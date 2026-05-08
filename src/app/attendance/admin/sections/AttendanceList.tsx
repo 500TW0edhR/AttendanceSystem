@@ -222,7 +222,7 @@ export default function AttendanceList({
                       cursor: 'pointer'
                     }}
                   >
-                    修正
+                    打刻修正
                   </button>
                 </td>
               </tr>
