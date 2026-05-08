@@ -328,8 +328,8 @@ export default function ShiftManagement({
       {/* 編集モード終了ボタン (フローティング) */}
       {isEditMode && (
         <div style={{
-          position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000,
-          animation: 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          position: 'fixed', bottom: '40px', left: '240px', right: 0, zIndex: 1000,
+          display: 'flex', justifyContent: 'center', pointerEvents: 'none'
         }}>
           <button 
             onClick={() => {
@@ -338,9 +338,11 @@ export default function ShiftManagement({
               if (showToast) showToast('シフトの変更内容を確定しました', 'success');
             }}
             style={{
+              pointerEvents: 'auto',
               background: EDIT_COLOR, color: 'white', padding: '15px 40px', borderRadius: '50px',
               fontSize: '18px', fontWeight: 'bold', border: 'none', cursor: 'pointer',
-              boxShadow: '0 10px 25px rgba(16, 185, 129, 0.4)', display: 'flex', alignItems: 'center', gap: '10px'
+              boxShadow: '0 10px 25px rgba(16, 185, 129, 0.4)', display: 'flex', alignItems: 'center', gap: '10px',
+              animation: 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
             }}
           >
             <span style={{ fontSize: '22px' }}>💾</span> 編集モードを終了して保存
