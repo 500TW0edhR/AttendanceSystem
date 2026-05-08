@@ -108,7 +108,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
           </thead>
           <tbody>
             {filteredProfiles.map(p => (
-              <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <tr key={p.id} className="staff-row" style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s' }}>
                 <td style={{ padding: '15px 20px' }}>{p.employee_id}</td>
                 <td style={{ padding: '15px 20px', fontWeight: 'bold' }}>
                   {p.full_name}
@@ -162,6 +162,15 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        .staff-row:nth-child(even) {
+          background-color: #f4fcf7;
+        }
+        .staff-row:hover {
+          background-color: #f8fafc !important;
+        }
+      `}</style>
     </section>
   );
 }

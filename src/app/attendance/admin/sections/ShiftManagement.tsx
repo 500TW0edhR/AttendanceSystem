@@ -217,8 +217,8 @@ export default function ShiftManagement({
             {filteredProfiles.map((p: any, idx: number) => {
               let cR = 0, cL = 0, cO = 0;
               return (
-                <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 !== 0 ? '#f8fafc' : 'white' }}>
-                  <td style={{ padding: '15px 20px', fontWeight: 'bold', position: 'sticky', left: 0, background: idx % 2 !== 0 ? '#f8fafc' : 'white', zIndex: 5, borderRight: '1px solid #f1f5f9' }}>{p.full_name}</td>
+                <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 !== 0 ? '#f4fcf7' : 'white', transition: 'background 0.2s' }}>
+                  <td style={{ padding: '15px 20px', fontWeight: 'bold', position: 'sticky', left: 0, background: idx % 2 !== 0 ? '#f4fcf7' : 'white', zIndex: 5, borderRight: '1px solid #f1f5f9' }}>{p.full_name}</td>
                   {daysArray.map(d => {
                     const type = getShiftType(p, d);
                     if (type === 'R') cR++; else if (type === 'L') cL++; else cO++;
