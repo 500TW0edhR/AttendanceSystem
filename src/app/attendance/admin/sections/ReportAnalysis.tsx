@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { PREFECTURES } from '../../AdminView';
 
 export default function ReportAnalysis({ isDemoMode = false }: { isDemoMode?: boolean }) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -78,8 +79,9 @@ export default function ReportAnalysis({ isDemoMode = false }: { isDemoMode?: bo
           <div style={{ fontSize: '13px', color: '#64748b' }}>拠点フィルター:</div>
           <select style={{ padding: '5px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px' }}>
             <option>全拠点（全国）</option>
-            {isDemoMode && <option>東京本社</option>}
-            {isDemoMode && <option>大阪支店</option>}
+            {PREFECTURES.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
           </select>
         </div>
       </div>
