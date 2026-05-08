@@ -2,6 +2,16 @@
 
 import React, { useState } from 'react';
 
+const PREFECTURES = [
+  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
+  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
+  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
+  '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
+  '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+  '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
+  '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
+];
+
 interface AttendanceListProps {
   profiles: any[];
   allData: any[];
@@ -59,7 +69,7 @@ export default function AttendanceList({
     let punchOut = record?.punch_out || '-';
 
     if (isDemoMode && p.employee_id !== 'No.0000') {
-      const branches = ['東京', '大阪', '名古屋', '福岡', '横浜'];
+      const branches = PREFECTURES;
       const statuses = ['正常', '正常', '正常', '未打刻', '外出中', '直行直帰', '残業超過'];
       branch = branches[idx % branches.length];
       status = statuses[idx % statuses.length];
@@ -149,10 +159,7 @@ export default function AttendanceList({
           style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '14px', outline: 'none' }}
         >
           <option value="ALL">全ての拠点</option>
-          <option value="東京">東京</option>
-          <option value="大阪">大阪</option>
-          <option value="名古屋">名古屋</option>
-          <option value="福岡">福岡</option>
+          {PREFECTURES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
         <select 
           value={filterStatus}
@@ -185,7 +192,7 @@ export default function AttendanceList({
             {records.map((r: any) => (
               <tr key={r.id} className="attendance-row" style={{ 
                 borderBottom: '1px solid #f1f5f9', 
-                background: (r.status === '未打刻' || r.status === '残業超過') ? '#fff5f5' : 'transparent',
+                background: (r.status === '未打刻' || r.status === '残業超過') ? '#fff5f5' : undefined,
                 transition: 'background 0.2s'
               }}>
                 <td style={{ padding: '18px 25px', color: '#64748b', fontSize: '14px', fontFamily: 'monospace' }}>{r.employee_id}</td>
@@ -230,6 +237,9 @@ export default function AttendanceList({
       </div>
 
       <style jsx>{`
+        .attendance-row:nth-child(even) {
+          background-color: #f4fcf7;
+        }
         .attendance-row:hover {
           background-color: #f8fafc !important;
         }
