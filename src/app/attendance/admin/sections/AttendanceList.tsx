@@ -106,18 +106,7 @@ export default function AttendanceList({
           </h1>
           <p style={{ color: '#64748b', margin: '5px 0 0 0' }}>対象日: <span style={{fontWeight: 'bold', color: '#1e293b'}}>{todayDate?.replace(/-/g, '/')}</span> のリアルタイム稼働状況です。</p>
         </div>
-        <button 
-          onClick={() => alert('デモモード：CSV出力を開始します')}
-          style={{ 
-            background: 'white', border: '1px solid #e2e8f0', padding: '10px 20px', 
-            borderRadius: '10px', fontSize: '14px', fontWeight: 'bold', color: '#475569',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-        >
-          📥 CSV出力
-        </button>
+
       </div>
 
       {/* 統計カード */}
