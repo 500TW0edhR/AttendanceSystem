@@ -17,6 +17,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
   const [activeTab, setActiveTab] = useState('basic');
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const csvImportRef = React.useRef<HTMLInputElement>(null);
 
   // 初回データ成形
   useEffect(() => {
@@ -159,6 +160,102 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
     }
   };
 
+  // CSVエクスポート
+  const handleExportCSV = () => {
+    const headers = ["社員番号", "氏名", "フリガナ", "拠点", "部署", "役職", "雇用形態", "入社日", "メールアドレス", "生年月日", "電話番号", "住所", "緊急連絡先", "振込先情報"];
+    const rows = localProfiles.map(p => [
+      p.employee_id, p.full_name, p.kana, p.branch, p.department, p.role, p.employment_type, p.hire_date, p.email, p.dob, p.phone, p.address, p.emergency_contact, p.bank_info
+    ]);
+    
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); // Excelでの文字化け防止
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `staff_master_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSVを出力しました", "success");
+  };
+
+  // CSVインポート
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").filter(line => line.trim() !== "");
+      if (lines.length <= 1) {
+        showToast("データが含まれていません", "warning");
+        return;
+      }
+
+      const newProfiles = lines.slice(1).map(line => {
+        const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ''));
+        return {
+          id: `csv-${Date.now()}-${Math.random()}`,
+          employee_id: cols[0],
+          full_name: cols[1],
+          kana: cols[2],
+          branch: cols[3],
+          department: cols[4],
+          role: cols[5],
+          employment_type: cols[6],
+          hire_date: cols[7],
+          email: cols[8],
+          dob: cols[9],
+          phone: cols[10],
+          address: cols[11],
+          emergency_contact: cols[12],
+          bank_info: cols[13],
+          status: '在籍',
+          photo: '/demo/p1.png'
+        };
+      });
+
+      if (isDemoMode) {
+        setLocalProfiles([...newProfiles, ...localProfiles]);
+        showToast(`${newProfiles.length}件のデータをインポートしました（デモ）`, "success");
+      } else {
+        // 本番モードではSupabaseへ一括保存（Upsert想定）
+        const { error } = await supabase.from('profiles').upsert(
+          newProfiles.map(p => ({
+            employee_id: p.employee_id,
+            full_name: p.full_name,
+            kana: p.kana,
+            branch: p.branch,
+            department: p.department,
+            role: p.role,
+            employment_type: p.employment_type,
+            hire_date: p.hire_date,
+            email: p.email,
+            dob: p.dob,
+            phone: p.phone,
+            address: p.address,
+            emergency_contact: p.emergency_contact,
+            bank_info: p.bank_info,
+            status: '在籍'
+          })), 
+          { onConflict: 'employee_id' }
+        );
+
+        if (!error) {
+          showToast(`${newProfiles.length}件のデータをインポートしました`, "success");
+          const { data } = await supabase.from('profiles').select('*');
+          if (data) setLocalProfiles(data);
+        } else {
+          showToast(`インポートに失敗しました: ${error.message}`, "danger");
+        }
+      }
+      if (csvImportRef.current) csvImportRef.current.value = "";
+    };
+    reader.readAsText(file);
+  };
+
   const filteredProfiles = localProfiles
     .filter(p => displayTab === 'active' ? p.status !== '退職' : p.status === '退職')
     .filter(p => p.full_name?.includes(searchQuery) || p.employee_id?.includes(searchQuery))
@@ -171,8 +268,9 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#1e293b', margin: 0 }}>社員マスタ管理</h1>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={() => alert('デモ：CSVインポート画面')} style={{ padding: '10px 18px', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}>📤 CSVインポート</button>
-          <button onClick={() => alert('デモ：CSV出力')} style={{ padding: '10px 18px', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}>📥 CSV出力</button>
+          <input type="file" ref={csvImportRef} onChange={handleImportCSV} accept=".csv" style={{ display: 'none' }} />
+          <button onClick={() => csvImportRef.current?.click()} style={{ padding: '10px 18px', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}>📤 CSVインポート</button>
+          <button onClick={handleExportCSV} style={{ padding: '10px 18px', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 'bold', color: '#475569', cursor: 'pointer' }}>📥 CSV出力</button>
           <button onClick={handleAddNew} style={{ padding: '10px 22px', borderRadius: '10px', border: 'none', background: '#3b82f6', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>＋ 社員を新規登録</button>
         </div>
       </div>
