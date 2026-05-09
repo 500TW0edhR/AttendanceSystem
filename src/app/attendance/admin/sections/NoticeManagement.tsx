@@ -20,8 +20,16 @@ export default function NoticeManagement({ isDemoMode, showToast }: any) {
       return;
     }
     
-    const { data, error } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
-    if (!error && data) setNotices(data);
+    try {
+      const { data, error } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
+      if (!error && data) {
+        setNotices(data);
+      } else if (error) {
+        console.warn("Table 'notices' might not exist yet:", error.message);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -30,25 +38,38 @@ export default function NoticeManagement({ isDemoMode, showToast }: any) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !content) return;
+    if (!title || !content) {
+      showToast("タイトルと内容を入力してください", "warning");
+      return;
+    }
     
     setIsLoading(true);
     if (isDemoMode) {
-      showToast("デモモード：お知らせを投稿しました", "success");
-      setTitle('');
-      setContent('');
-      setIsLoading(false);
+      setTimeout(() => {
+        const newNotice = {
+          id: Date.now().toString(),
+          title,
+          content,
+          created_at: new Date().toISOString()
+        };
+        setNotices([newNotice, ...notices]);
+        showToast("デモモード：お知らせを投稿しました", "success");
+        setTitle('');
+        setContent('');
+        setIsLoading(false);
+      }, 500);
       return;
     }
 
     const { error } = await supabase.from('notices').insert({ title, content });
     if (!error) {
-      showToast("お知らせを投稿しました", "success");
+      showToast("お知らせを公開しました", "success");
       setTitle('');
       setContent('');
       fetchNotices();
     } else {
-      showToast("投稿に失敗しました", "danger");
+      console.error(error);
+      showToast(`投稿に失敗しました: ${error.message}`, "danger");
     }
     setIsLoading(false);
   };
@@ -66,83 +87,115 @@ export default function NoticeManagement({ isDemoMode, showToast }: any) {
     if (!error) {
       showToast("お知らせを削除しました", "success");
       fetchNotices();
+    } else {
+      showToast("削除に失敗しました", "danger");
     }
   };
 
   return (
-    <section className="admin-section active" style={{ padding: '40px' }}>
+    <section className="admin-section active" style={{ padding: '20px 40px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '900' }}>🔔 お知らせ管理</h2>
+        <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#1e293b', margin: 0 }}>🔔 お知らせ管理</h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '30px' }}>
-        {/* 投稿フォーム */}
-        <div>
-          <form className="card" onSubmit={handleSubmit} style={{ padding: '30px', borderRadius: '20px' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px' }}>🆕 新規お知らせ投稿</h3>
-            <div className="form-group">
-              <label>タイトル</label>
+      <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '40px', alignItems: 'start' }}>
+        
+        {/* 左側：投稿フォーム */}
+        <div style={{ background: 'white', padding: '35px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.03)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', marginTop: 0, marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '24px' }}>✍️</span> 新規投稿
+          </h2>
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>タイトル</label>
               <input 
                 type="text" 
                 value={title} 
                 onChange={(e) => setTitle(e.target.value)} 
                 placeholder="例：夏季休暇のお知らせ"
-                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}
+                className="modern-input"
+                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', transition: 'all 0.2s', fontSize: '15px' }}
               />
             </div>
-            <div className="form-group" style={{ marginTop: '20px' }}>
-              <label>内容</label>
+            <div style={{ marginBottom: '25px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>内容</label>
               <textarea 
                 value={content} 
                 onChange={(e) => setContent(e.target.value)} 
-                placeholder="詳細を入力してください..."
-                style={{ width: '100%', height: '150px', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', resize: 'none' }}
+                placeholder="スタッフへのメッセージを入力してください..."
+                className="modern-input"
+                style={{ width: '100%', height: '200px', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', outline: 'none', transition: 'all 0.2s', fontSize: '15px', resize: 'none', lineHeight: '1.6' }}
               />
             </div>
             <button 
               type="submit" 
               disabled={isLoading}
-              className="btn-rect" 
-              style={{ background: 'var(--primary)', color: 'white', marginTop: '20px', width: '100%', height: '50px' }}
+              style={{ 
+                width: '100%', padding: '16px', borderRadius: '14px', border: 'none', 
+                background: isLoading ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6, #2563eb)', 
+                color: 'white', fontWeight: '900', fontSize: '16px', cursor: 'pointer', 
+                boxShadow: '0 10px 20px rgba(37, 99, 235, 0.2)', transition: 'all 0.3s'
+              }}
             >
               {isLoading ? '送信中...' : 'お知らせを公開する'}
             </button>
           </form>
         </div>
 
-        {/* 投稿一覧 */}
-        <div>
-          <div className="card" style={{ padding: '30px', borderRadius: '20px', minHeight: '500px' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px' }}>📋 投稿済み一覧</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {notices.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '100px 0', color: '#94a3b8' }}>
-                  <div style={{ fontSize: '40px', marginBottom: '10px' }}>📭</div>
-                  投稿されたお知らせはありません
-                </div>
-              ) : (
-                notices.map((n) => (
-                  <div key={n.id} style={{ border: '1px solid #f1f5f9', borderRadius: '12px', padding: '20px', position: 'relative', transition: 'all 0.2s' }} className="notice-item">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b', marginBottom: '5px' }}>{n.title}</div>
-                        <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px' }}>{new Date(n.created_at).toLocaleString('ja-JP')}</div>
-                        <div style={{ fontSize: '14px', color: '#475569', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{n.content}</div>
+        {/* 右側：履歴一覧 */}
+        <div style={{ background: 'white', padding: '35px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.03)', minHeight: '600px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', marginTop: 0, marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '24px' }}>📋</span> 投稿済み一覧
+          </h2>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {notices.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '120px 0', color: '#94a3b8' }}>
+                <div style={{ fontSize: '50px', marginBottom: '15px', opacity: 0.5 }}>📭</div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold' }}>投稿されたお知らせはありません</div>
+                <div style={{ fontSize: '13px', marginTop: '5px' }}>左のフォームから新しい投稿を作成してください。</div>
+              </div>
+            ) : (
+              notices.map((n) => (
+                <div key={n.id} style={{ border: '1px solid #f1f5f9', borderRadius: '18px', padding: '25px', position: 'relative', transition: 'all 0.3s', background: '#f8fafc' }} className="notice-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '18px', fontWeight: '900', color: '#1e293b', marginBottom: '6px' }}>{n.title}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
+                        <span>📅 {new Date(n.created_at).toLocaleString('ja-JP')}</span>
                       </div>
-                      <button 
-                        onClick={() => handleDelete(n.id)}
-                        style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', marginLeft: '10px' }}
-                      >
-                        削除
-                      </button>
                     </div>
+                    <button 
+                      onClick={() => handleDelete(n.id)}
+                      style={{ background: 'white', color: '#ef4444', border: '1px solid #fee2e2', padding: '8px 16px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+                      className="delete-btn"
+                    >
+                      削除
+                    </button>
                   </div>
-                ))
-              )}
-            </div>
+                  <div style={{ fontSize: '15px', color: '#475569', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>{n.content}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .modern-input:focus {
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+        }
+        .notice-card:hover {
+          background: white !important;
+          border-color: #dbeafe !important;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.04) !important;
+          transform: translateY(-2px);
+        }
+        .delete-btn:hover {
+          background: #fee2e2 !important;
+        }
+      `}</style>
     </section>
   );
 }
