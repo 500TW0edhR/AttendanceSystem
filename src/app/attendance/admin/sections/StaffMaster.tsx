@@ -108,7 +108,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
       return;
     }
 
-    const { error } = await supabase.from('profiles').update({
+    const updateData: any = {
       full_name: editStaff.full_name,
       kana: editStaff.kana,
       branch: editStaff.branch,
@@ -121,8 +121,17 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
       phone: editStaff.phone,
       address: editStaff.address,
       visa_expiry: editStaff.visaExpiry,
+      emergency_contact: editStaff.emergency_contact,
+      bank_info: editStaff.bank_info,
       status: editStaff.status
-    }).eq('id', selectedStaff.id);
+    };
+
+    // 写真データがあれば追加（photo_urlカラムへ保存）
+    if (editStaff.photo && editStaff.photo.startsWith('data:')) {
+      updateData.photo_url = editStaff.photo;
+    }
+
+    const { error } = await supabase.from('profiles').update(updateData).eq('id', selectedStaff.id);
 
     if (!error) {
       showToast("情報を更新しました", "success");
