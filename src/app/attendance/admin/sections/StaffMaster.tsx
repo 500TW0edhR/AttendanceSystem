@@ -16,6 +16,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
   
   const [activeTab, setActiveTab] = useState('basic');
   const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // 初回データ成形
   useEffect(() => {
@@ -135,6 +136,18 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
 
   const handleInputChange = (key: string, value: any) => {
     setEditStaff((prev: any) => ({ ...prev, [key]: value }));
+  };
+
+  // 画像ファイルが選択された時の処理
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleInputChange('photo', reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const filteredProfiles = localProfiles
@@ -309,7 +322,19 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
             <div style={{ padding: '35px 40px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '25px' }}>
               <div style={{ position: 'relative' }}>
                 <img src={editStaff.photo} alt="edit-profile" style={{ width: '80px', height: '80px', borderRadius: '20px', objectFit: 'cover', border: '3px solid white', boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }} />
-                <button style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: '#3b82f6', color: 'white', border: '2px solid white', borderRadius: '50%', width: '28px', height: '28px', fontSize: '14px', cursor: 'pointer' }}>✎</button>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: '#3b82f6', color: 'white', border: '2px solid white', borderRadius: '50%', width: '28px', height: '28px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  ✎
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                />
               </div>
               <div style={{ flex: 1 }}>
                 <h2 style={{ margin: 0, fontSize: '24px', fontWeight: '900' }}>{editStaff.is_new ? '社員の新規登録' : `${editStaff.full_name} の詳細編集`}</h2>
