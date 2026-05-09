@@ -41,7 +41,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
         address: p.address || '東京都新宿区',
         email: p.email || `${p.employee_id || 'user'}@example.com`,
         department: p.department || (p.is_demo ? '営業部' : '未設定'),
-        role: p.role || (p.is_demo ? '一般' : '未設定'),
+        position: p.position || (p.is_demo ? '一般' : '未設定'),
         hire_date: p.hire_date || '2023-04-01',
         emergency_contact: p.emergency_contact || '田中 太郎 (父) 080-1234-5678',
         bank_info: p.bank_info || '〇〇銀行 △△支店 普通 1234567',
@@ -73,7 +73,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
       branch: '東京都',
       employment_type: '正社員',
       department: '未設定',
-      role: '一般',
+      position: '一般',
       hire_date: new Date().toISOString().split('T')[0],
       email: '',
       dob: '1995-01-01',
@@ -115,7 +115,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
       branch: editStaff.branch,
       employment_type: editStaff.employment_type,
       department: editStaff.department,
-      role: editStaff.role,
+      position: editStaff.position,
       hire_date: editStaff.hire_date,
       email: editStaff.email,
       dob: editStaff.dob,
@@ -164,7 +164,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
   const handleExportCSV = () => {
     const headers = ["社員番号", "氏名", "フリガナ", "拠点", "部署", "役職", "雇用形態", "入社日", "メールアドレス", "生年月日", "電話番号", "住所", "緊急連絡先", "振込先情報"];
     const rows = localProfiles.map(p => [
-      p.employee_id, p.full_name, p.kana, p.branch, p.department, p.role, p.employment_type, p.hire_date, p.email, p.dob, p.phone, p.address, p.emergency_contact, p.bank_info
+      p.employee_id, p.full_name, p.kana, p.branch, p.department, p.position, p.employment_type, p.hire_date, p.email, p.dob, p.phone, p.address, p.emergency_contact, p.bank_info
     ]);
     
     const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
@@ -203,7 +203,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
           kana: cols[2],
           branch: cols[3],
           department: cols[4],
-          role: cols[5],
+          position: cols[5],
           employment_type: cols[6],
           hire_date: cols[7],
           email: cols[8],
@@ -221,7 +221,8 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
         setLocalProfiles([...newProfiles, ...localProfiles]);
         showToast(`${newProfiles.length}件のデータをインポートしました（デモ）`, "success");
       } else {
-        // 本番モードではSupabaseへ一括保存（Upsert想定）
+        // 本番モードではSupabaseへ一括保存
+        // roleを更新対象から外すことで、管理権限の上書きを防ぐ
         const { error } = await supabase.from('profiles').upsert(
           newProfiles.map(p => ({
             employee_id: p.employee_id,
@@ -229,7 +230,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
             kana: p.kana,
             branch: p.branch,
             department: p.department,
-            role: p.role,
+            position: p.position,
             employment_type: p.employment_type,
             hire_date: p.hire_date,
             email: p.email,
@@ -237,15 +238,16 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
             phone: p.phone,
             address: p.address,
             emergency_contact: p.emergency_contact,
-            bank_info: p.bank_info,
-            status: '在籍'
+            bank_info: p.bank_info
+            // roleやstatusは含めない（既存の権限を維持するため）
           })), 
           { onConflict: 'employee_id' }
         );
 
         if (!error) {
           showToast(`${newProfiles.length}件のデータをインポートしました`, "success");
-          const { data } = await supabase.from('profiles').select('*');
+          // インポート後に最新のデータを再取得
+          const { data } = await supabase.from('profiles').select('*').order('employee_id', { ascending: true });
           if (data) setLocalProfiles(data);
         } else {
           showToast(`インポートに失敗しました: ${error.message}`, "danger");
@@ -337,7 +339,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
                 </td>
                 <td style={{ padding: '15px 25px' }}>
                   <div style={{ fontWeight: 'bold', color: '#475569' }}>{p.branch}</div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>{p.department} / {p.role}</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>{p.department} / {p.position}</div>
                 </td>
                 <td style={{ padding: '15px 25px' }}>
                   <span style={{ fontSize: '14px', color: '#475569', background: '#f1f5f9', padding: '4px 10px', borderRadius: '6px' }}>{p.employment_type}</span>
@@ -392,7 +394,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
                 <h3 style={{ fontSize: '14px', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px', marginBottom: '15px' }}>🏢 業務情報</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>拠点</span><span style={{ fontWeight: 'bold' }}>{viewStaff.branch}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>部署 / 役職</span><span style={{ fontWeight: 'bold' }}>{viewStaff.department} / {viewStaff.role}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>部署 / 役職</span><span style={{ fontWeight: 'bold' }}>{viewStaff.department} / {viewStaff.position}</span></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>入社日</span><span style={{ fontWeight: 'bold' }}>{viewStaff.hire_date}</span></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#64748b' }}>メール</span><span style={{ fontWeight: 'bold' }}>{viewStaff.email}</span></div>
                 </div>
@@ -463,11 +465,33 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
                   <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>氏名</label><input type="text" value={editStaff.full_name} onChange={e => handleInputChange('full_name', e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }} /></div>
                   <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>フリガナ</label><input type="text" value={editStaff.kana} onChange={e => handleInputChange('kana', e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }} /></div>
                   <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>拠点</label><select value={editStaff.branch} onChange={e => handleInputChange('branch', e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }}>{PREFECTURES.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
-                  <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>部署 / 役職</label><div style={{ display: 'flex', gap: '10px' }}><input type="text" value={editStaff.department} onChange={e => handleInputChange('department', e.target.value)} placeholder="部署" style={{ flex: 1, padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }} /><input type="text" value={editStaff.role} onChange={e => handleInputChange('role', e.target.value)} placeholder="役職" style={{ flex: 1, padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }} /></div></div>
+                  <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>部署 / 役職</label><div style={{ display: 'flex', gap: '10px' }}><input type="text" value={editStaff.department} onChange={e => handleInputChange('department', e.target.value)} placeholder="部署" style={{ flex: 1, padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }} /><input type="text" value={editStaff.position} onChange={e => handleInputChange('position', e.target.value)} placeholder="役職" style={{ flex: 1, padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }} /></div></div>
                   <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>雇用形態</label><select value={editStaff.employment_type} onChange={e => handleInputChange('employment_type', e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }}><option>正社員</option><option>契約社員</option><option>アルバイト</option></select></div>
                   <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>入社日</label><input type="date" value={editStaff.hire_date} onChange={e => handleInputChange('hire_date', e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }} /></div>
                   <div style={{ gridColumn: 'span 2' }}><label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>メールアドレス</label><input type="email" value={editStaff.email} onChange={e => handleInputChange('email', e.target.value)} placeholder="user@example.com" style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '10px' }} /></div>
-                </div>
+                  <div style={{ gridColumn: 'span 2', background: '#f0f9ff', padding: '20px', borderRadius: '16px', border: '1px solid #bfdbfe' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e40af' }}>🔐 システム管理者権限</label>
+                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>管理者画面へのアクセスを許可します</div>
+                      </div>
+                      <div
+                        onClick={() => handleInputChange('role', editStaff.role === 'admin' ? 'user' : 'admin')}
+                        style={{
+                          width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer',
+                          background: editStaff.role === 'admin' ? '#3b82f6' : '#cbd5e1',
+                          position: 'relative', transition: 'all 0.3s'
+                        }}
+                      >
+                        <div style={{
+                          width: '22px', height: '22px', borderRadius: '50%', background: 'white',
+                          position: 'absolute', top: '3px',
+                          left: editStaff.role === 'admin' ? '27px' : '3px',
+                          transition: 'all 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                        }} />
+                      </div>
+                    </div>
+                  </div>
               )}
               {activeTab === 'personal' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>

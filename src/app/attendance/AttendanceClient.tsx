@@ -20,6 +20,8 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
   const [allData, setAllData] = useState<any[]>([]);
   const [companyName, setCompanyName] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [isSettingUp, setIsSettingUp] = useState(false);
 
   const supabase = React.useMemo(() => createClient(), []);
   
@@ -56,7 +58,12 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
       const { data: setD } = await supabase.from('settings').select('company_name').eq('id', 'system').maybeSingle();
       
       if (isMounted) {
-        if (allP) setProfiles(allP);
+        if (allP) {
+          setProfiles(allP);
+          // 管理者が1人もいない場合：初期セットアップが必要
+          const hasAdmin = allP.some((p: any) => p.role === 'admin');
+          setNeedsSetup(!hasAdmin);
+        }
         if (allA) setAllData(allA);
         if (setD && setD.company_name) setCompanyName(setD.company_name);
         setLoading(false);
@@ -107,8 +114,58 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
     }
   };
 
+  // 初期セットアップ処理
+  const handleSetupAdmin = async () => {
+    setIsSettingUp(true);
+    const { error } = await supabase.from('profiles').update({ role: 'admin' }).eq('id', userId);
+    if (!error) {
+      setRole('admin');
+      setNeedsSetup(false);
+      setView('admin');
+      triggerToast('初期管理者として登録されました！管理画面へようこそ。', 'success');
+    } else {
+      triggerToast('セットアップに失敗しました。もう一度お試しください。', 'danger');
+      console.error(error);
+    }
+    setIsSettingUp(false);
+  };
+
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f8fafc', color: '#64748b', fontSize: '18px', fontWeight: 'bold' }}>データを読み込み中...</div>;
+  }
+
+  // 初期セットアップ画面（管理者が1人もいない場合）
+  if (needsSetup) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%)' }}>
+        <div style={{ width: '550px', background: 'white', borderRadius: '32px', padding: '60px 50px', textAlign: 'center', boxShadow: '0 25px 80px rgba(0,0,0,0.4)' }}>
+          <div style={{ fontSize: '60px', marginBottom: '20px' }}>🚀</div>
+          <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#1e293b', marginBottom: '15px' }}>初期セットアップ</h1>
+          <p style={{ fontSize: '16px', color: '#64748b', lineHeight: '1.8', marginBottom: '35px' }}>
+            このシステムにはまだ管理者が登録されていません。<br />
+            あなたが<strong>最初の管理者</strong>として登録されます。<br />
+            管理者は後から社員マスタで追加・変更できます。
+          </p>
+          <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '20px', marginBottom: '35px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '8px' }}>ログイン中のアカウント</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b' }}>{userEmail}</div>
+          </div>
+          <button
+            onClick={handleSetupAdmin}
+            disabled={isSettingUp}
+            style={{
+              width: '100%', padding: '18px', borderRadius: '16px', border: 'none',
+              background: isSettingUp ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6, #2563eb)',
+              color: 'white', fontWeight: '900', fontSize: '18px', cursor: 'pointer',
+              boxShadow: '0 10px 30px rgba(37, 99, 235, 0.3)', transition: 'all 0.3s'
+            }}
+          >
+            {isSettingUp ? 'セットアップ中...' : '管理者として開始する'}
+          </button>
+          <p style={{ marginTop: '20px', fontSize: '13px', color: '#94a3b8' }}>※ この操作は1回のみです。以降はこの画面は表示されません。</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -116,7 +173,7 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
       <div className="view-switcher" style={{ justifyContent: 'space-between', padding: '10px 20px' }}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button className={view === 'staff' ? 'active' : ''} onClick={() => setView('staff')}>稼働者アプリ</button>
-          {(role === 'admin' || isDemoMode) && (
+          {(role === 'admin' || isDemoMode || needsSetup) && (
             <button className={view === 'admin' ? 'active' : ''} onClick={() => setView('admin')}>管理者画面</button>
           )}
         </div>
