@@ -121,15 +121,17 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
       dob: editStaff.dob,
       phone: editStaff.phone,
       address: editStaff.address,
+      visa_type: editStaff.visa_type,
       visa_expiry: editStaff.visaExpiry,
       emergency_contact: editStaff.emergency_contact,
       bank_info: editStaff.bank_info,
-      status: editStaff.status
+      status: editStaff.status,
+      role: editStaff.role || 'user'
     };
 
-    // 写真データがあれば追加（photo_urlカラムへ保存）
+    // 写真データがあれば追加
     if (editStaff.photo && editStaff.photo.startsWith('data:')) {
-      updateData.photo_url = editStaff.photo;
+      updateData.photo = editStaff.photo;
     }
 
     const { error } = await supabase.from('profiles').update(updateData).eq('id', selectedStaff.id);
@@ -222,35 +224,50 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
         showToast(`${newProfiles.length}件のデータをインポートしました（デモ）`, "success");
       } else {
         // 本番モードではSupabaseへ一括保存
-        // roleを更新対象から外すことで、管理権限の上書きを防ぐ
         const { error } = await supabase.from('profiles').upsert(
-          newProfiles.map(p => ({
-            employee_id: p.employee_id,
-            full_name: p.full_name,
-            kana: p.kana,
-            branch: p.branch,
-            department: p.department,
-            position: p.position,
-            employment_type: p.employment_type,
-            hire_date: p.hire_date,
-            email: p.email,
-            dob: p.dob,
-            phone: p.phone,
-            address: p.address,
-            emergency_contact: p.emergency_contact,
-            bank_info: p.bank_info
-            // roleやstatusは含めない（既存の権限を維持するため）
-          })), 
+          newProfiles
+            .filter(p => p.full_name || p.employee_id)
+            .map(p => {
+              const data: any = {
+                employee_id: p.employee_id || `E${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
+                full_name: p.full_name || '名称未設定',
+                kana: p.kana || '',
+                email: p.email || '',
+                branch: p.branch || '未設定',
+                department: p.department || '未設定',
+                position: p.position || '未設定',
+                employment_type: p.employment_type || '正社員',
+                status: p.status || '在籍',
+                hire_date: p.hire_date || null,
+                dob: p.dob || null,
+                phone: p.phone || '',
+                address: p.address || '',
+                emergency_contact: p.emergency_contact || '',
+                bank_info: p.bank_info || '',
+                role: 'user',
+                is_demo: false,
+                photo: '/demo/p1.png'
+              };
+              // csv-xxx形式のIDはUUID型に合わないのでDBには送らない（DBが自動生成する）
+              return data;
+            }), 
           { onConflict: 'employee_id' }
         );
 
         if (!error) {
           showToast(`${newProfiles.length}件のデータをインポートしました`, "success");
-          // インポート後に最新のデータを再取得
-          const { data } = await supabase.from('profiles').select('*').order('employee_id', { ascending: true });
-          if (data) setLocalProfiles(data);
+          // Supabaseから最新データを再取得して画面を更新
+          const { data: refreshed } = await supabase.from('profiles').select('*').order('employee_id', { ascending: true });
+          if (refreshed) setLocalProfiles(refreshed.map((p: any, idx: number) => ({
+            ...p,
+            kana: p.kana || '',
+            photo: '/demo/p1.png',
+            department: p.department || '未設定',
+            position: p.position || '未設定',
+          })));
         } else {
           showToast(`インポートに失敗しました: ${error.message}`, "danger");
+          console.error(error);
         }
       }
       if (csvImportRef.current) csvImportRef.current.value = "";

@@ -165,21 +165,40 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
       return;
     }
 
-    const pIn = selectedProfile.punchIn || null;
-    const pOut = selectedProfile.punchOut || null;
+    // 時刻文字列を検証する関数（"--:--", "-- : --", "-", 空文字等をnullに変換）
+    const parseTime = (val: string | null | undefined): string | null => {
+      if (!val) return null;
+      const cleaned = val.replace(/\s/g, ''); // スペース除去
+      if (!cleaned || cleaned === '-' || cleaned === '--' || cleaned === '--:--' || cleaned.includes('-')) return null;
+      // HH:MM 形式のバリデーション
+      const match = cleaned.match(/^(\d{1,2}):(\d{2})$/);
+      if (!match) return null;
+      const h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+      return cleaned;
+    };
 
-    const { error } = await supabase.from('attendances').upsert({
+    const pIn = parseTime(selectedProfile.punchIn);
+    const pOut = parseTime(selectedProfile.punchOut);
+
+    // 送信データの構築
+    const upsertData: any = {
       user_id: selectedProfile.id,
       target_date: todayDate,
-      punch_in: pIn === '' ? null : pIn,
-      punch_out: pOut === '' ? null : pOut
-    }, { onConflict: 'user_id,target_date' });
+      punch_in: pIn,
+      punch_out: pOut
+    };
+
+    const { error } = await supabase.from('attendances').upsert(upsertData, { onConflict: 'user_id,target_date' });
 
     if (!error) {
       showToast('打刻時間を修正しました', 'success');
       setIsModalOpen(false);
+      // 一覧を更新するために profiles を再取得するなどの処理が必要ならここで行う
     } else {
-      showToast('更新に失敗しました', 'danger');
+      console.error('Attendance update error:', error);
+      showToast(`更新に失敗しました: ${error.message}`, 'danger');
     }
   };
 

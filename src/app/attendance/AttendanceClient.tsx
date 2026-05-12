@@ -76,7 +76,9 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
     const channel = supabase
       .channel('client_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, () => {
-        // データが届いたら、裏側でスッと再取得する（リロードさせない）
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
         fetchData();
       })
       .subscribe();
@@ -91,10 +93,11 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
     setToastMsg(msg);
     setToastType(type);
     setShowToast(true);
-    // エラー以外は3.5秒で消す、エラーは手動で閉じるまで残す
-    if (type !== 'danger') {
-      setTimeout(() => setShowToast(false), 3500);
-    }
+    // エラーは10秒、それ以外は3.5秒で消す
+    const duration = type === 'danger' ? 10000 : 3500;
+    setTimeout(() => {
+      setShowToast(false);
+    }, duration);
   };
 
   const getDeviceClass = () => {
