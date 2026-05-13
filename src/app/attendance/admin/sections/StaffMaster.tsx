@@ -509,6 +509,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
                       </div>
                     </div>
                   </div>
+                </div>
               )}
               {activeTab === 'personal' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
