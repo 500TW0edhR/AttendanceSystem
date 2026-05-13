@@ -47,7 +47,7 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     
     const channel = supabase
       .channel('admin_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
         fetchApplications();
       })
       .subscribe();
@@ -190,15 +190,17 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
       punch_out: pOut
     };
 
+    console.log('📤 Attendance upsert data:', JSON.stringify(upsertData));
+
     const { error } = await supabase.from('attendances').upsert(upsertData, { onConflict: 'user_id,target_date' });
 
     if (!error) {
       showToast('打刻時間を修正しました', 'success');
       setIsModalOpen(false);
-      // 一覧を更新するために profiles を再取得するなどの処理が必要ならここで行う
     } else {
-      console.error('Attendance update error:', error);
-      showToast(`更新に失敗しました: ${error.message}`, 'danger');
+      console.error('❌ Attendance update error:', JSON.stringify(error, null, 2));
+      console.error('❌ Error details:', error.code, error.details, error.hint, error.message);
+      showToast(`更新に失敗しました: ${error.message || error.details || '不明なエラー'}`, 'danger');
     }
   };
 

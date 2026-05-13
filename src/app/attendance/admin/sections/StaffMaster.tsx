@@ -258,7 +258,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
           showToast(`${newProfiles.length}件のデータをインポートしました`, "success");
           // Supabaseから最新データを再取得して画面を更新
           const { data: refreshed } = await supabase.from('profiles').select('*').order('employee_id', { ascending: true });
-          if (refreshed) setLocalProfiles(refreshed.map((p: any, idx: number) => ({
+          if (refreshed) setLocalProfiles(refreshed.map((p: any) => ({
             ...p,
             kana: p.kana || '',
             photo: '/demo/p1.png',
