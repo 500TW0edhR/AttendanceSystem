@@ -23,7 +23,17 @@ export const PREFECTURES = [
   '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
 ];
 
-export default function AdminView({ profiles = [], allData = [], todayDate, isDemoMode, demoShifts = {}, showToast, realAdminId, companyName, updateCompanyName }: any) {
+export interface AttendanceRecord {
+  id?: string;
+  user_id: string;
+  target_date: string;
+  punch_in: string | null;
+  punch_out: string | null;
+  status?: string;
+  is_demo?: boolean;
+}
+
+export default function AdminView({ profiles = [], allData = [], setAllData, todayDate, isDemoMode, demoShifts = {}, showToast, realAdminId, companyName, updateCompanyName }: any) {
   const [activeSec, setActiveSec] = useState('sec-list');
   const [settingName, setSettingName] = useState(companyName || '');
   const [filterBranch, setFilterBranch] = useState('ALL');
@@ -183,7 +193,7 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     const pOut = parseTime(selectedProfile.punchOut);
 
     // 送信データの構築
-    const upsertData: any = {
+    const upsertData: AttendanceRecord = {
       user_id: selectedProfile.id,
       target_date: todayDate,
       punch_in: pIn,
@@ -197,6 +207,19 @@ export default function AdminView({ profiles = [], allData = [], todayDate, isDe
     if (!error) {
       showToast('打刻時間を修正しました', 'success');
       setIsModalOpen(false);
+      
+      if (setAllData) {
+        setAllData((prev: AttendanceRecord[]) => {
+          const existingIdx = prev.findIndex(a => a.user_id === upsertData.user_id && a.target_date === upsertData.target_date);
+          if (existingIdx >= 0) {
+            const newArr = [...prev];
+            newArr[existingIdx] = { ...newArr[existingIdx], punch_in: upsertData.punch_in, punch_out: upsertData.punch_out };
+            return newArr;
+          } else {
+            return [...prev, upsertData];
+          }
+        });
+      }
     } else {
       console.error('❌ Attendance update error:', JSON.stringify(error, null, 2));
       console.error('❌ Error details:', error.code, error.details, error.hint, error.message);
