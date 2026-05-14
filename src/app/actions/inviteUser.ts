@@ -3,6 +3,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 export async function inviteUserAction(email: string, profileData: any) {
+  console.log(`[InviteAction] Starting invitation for: ${email}`);
+
   // サービスロールキーを使用して特権クライアントを作成
   const adminClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,29 +12,62 @@ export async function inviteUserAction(email: string, profileData: any) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // 1. Supabase Auth にユーザーを招待
-  const { data: authUser, error: authError } = await adminClient.auth.admin.inviteUserByEmail(email)
+  try {
+    // 1. Supabase Auth にユーザーを招待
+    console.log(`[InviteAction] Sending auth invitation...`);
+    const { data: authUser, error: authError } = await adminClient.auth.admin.inviteUserByEmail(email)
 
-  if (authError) return { error: authError.message }
-  if (!authUser || !authUser.user) return { error: "ユーザーの作成に失敗しました" }
+    if (authError) {
+      console.error(`[InviteAction] Auth invitation error:`, authError.message);
+      return { error: authError.message };
+    }
+    if (!authUser || !authUser.user) return { error: "ユーザーの作成に失敗しました" };
 
-  // 2. 生成された ID を使って profiles テーブルにデータを挿入
-  const { error: dbError } = await adminClient
-    .from('profiles')
-    .insert({
-      id: authUser.user.id, // Auth側で生成されたUUIDを使用
-      ...profileData,
-      email: email
-    })
+    const userId = authUser.user.id;
+    console.log(`[InviteAction] Auth user created: ${userId}. Inserting profile...`);
 
-  if (dbError) return { error: dbError.message }
+    // 2. profiles テーブルにデータを挿入（不整合防止のため項目を限定）
+    const { error: dbError } = await adminClient
+      .from('profiles')
+      .insert({
+        id: userId,
+        full_name: profileData.full_name,
+        kana: profileData.kana,
+        branch: profileData.branch,
+        employment_type: profileData.employment_type,
+        department: profileData.department,
+        position: profileData.position,
+        hire_date: profileData.hire_date,
+        email: email,
+        dob: profileData.dob,
+        phone: profileData.phone,
+        address: profileData.address,
+        visa_type: profileData.visa_type,
+        visa_expiry: profileData.visa_expiry,
+        emergency_contact: profileData.emergency_contact,
+        bank_info: profileData.bank_info,
+        status: '招待中', // 初期状態を招待中に設定
+        role: profileData.role || 'user'
+      })
 
-  // 新しく作成されたプロファイルデータも一緒に返す（画面更新用）
-  return { 
-    data: {
-      ...profileData,
-      id: authUser.user.id,
-      email: email
-    } 
+    if (dbError) {
+      console.error(`[InviteAction] Database insertion error:`, dbError.message);
+      return { error: `プロフィール作成エラー: ${dbError.message}` };
+    }
+
+    console.log(`[InviteAction] Successfully completed for: ${email}`);
+
+    // 新しく作成されたプロファイルデータを返す
+    return { 
+      data: {
+        ...profileData,
+        id: userId,
+        email: email,
+        status: '招待中'
+      } 
+    }
+  } catch (err: any) {
+    console.error(`[InviteAction] Unexpected error:`, err);
+    return { error: `サーバーエラーが発生しました: ${err.message}` };
   }
 }

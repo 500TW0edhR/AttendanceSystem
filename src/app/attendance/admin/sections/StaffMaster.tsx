@@ -97,8 +97,9 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
     if (!selectedStaff || !editStaff) return;
     setIsSaving(true);
 
-    if (isDemoMode) {
-      setTimeout(() => {
+    try {
+      if (isDemoMode) {
+        await new Promise(resolve => setTimeout(resolve, 500));
         if (editStaff.is_new) {
           setLocalProfiles(prev => [editStaff, ...prev]);
         } else {
@@ -106,68 +107,69 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
         }
         showToast(editStaff.is_new ? "新しい社員を登録しました（デモ）" : "情報を更新しました（デモ）", "success");
         setSelectedStaff(null);
-        setIsSaving(false);
-      }, 500);
-      return;
-    }
-
-    const updateData: any = {
-      full_name: editStaff.full_name,
-      kana: editStaff.kana,
-      branch: editStaff.branch,
-      employment_type: editStaff.employment_type,
-      department: editStaff.department,
-      position: editStaff.position,
-      hire_date: editStaff.hire_date,
-      email: editStaff.email,
-      dob: editStaff.dob,
-      phone: editStaff.phone,
-      address: editStaff.address,
-      visa_type: editStaff.visa_type,
-      visa_expiry: editStaff.visaExpiry,
-      emergency_contact: editStaff.emergency_contact,
-      bank_info: editStaff.bank_info,
-      status: editStaff.status,
-      role: editStaff.role || 'user'
-    };
-
-    // 写真データがあれば追加
-    if (editStaff.photo && editStaff.photo.startsWith('data:')) {
-      updateData.photo = editStaff.photo;
-    }
-
-    if (editStaff.is_new) {
-      if (!editStaff.email) {
-        showToast("新規登録にはメールアドレスが必須です", "warning");
-        setIsSaving(false);
         return;
       }
-      // 新規追加（サーバーアクションで招待と紐付けを行う）
-      const result = await inviteUserAction(editStaff.email, updateData);
-      
-      if (result.error) {
-        console.error("Invite error:", result.error);
-        showToast(`登録に失敗しました: ${result.error}`, "danger");
-      } else if (result.data) {
-        setLocalProfiles(prev => [result.data, ...prev]);
-        showToast("新しい社員を招待・登録しました", "success");
-        setSelectedStaff(null);
-      }
-    } else {
-      // 更新（UPDATE）
-      const { error } = await supabase.from('profiles').update(updateData).eq('id', selectedStaff.id);
 
-      if (!error) {
-        showToast("情報を更新しました", "success");
-        setLocalProfiles(prev => prev.map(p => p.id === selectedStaff.id ? editStaff : p));
-        setSelectedStaff(null);
+      const updateData: any = {
+        full_name: editStaff.full_name,
+        kana: editStaff.kana,
+        branch: editStaff.branch,
+        employment_type: editStaff.employment_type,
+        department: editStaff.department,
+        position: editStaff.position,
+        hire_date: editStaff.hire_date,
+        email: editStaff.email,
+        dob: editStaff.dob,
+        phone: editStaff.phone,
+        address: editStaff.address,
+        visa_type: editStaff.visa_type,
+        visa_expiry: editStaff.visaExpiry,
+        emergency_contact: editStaff.emergency_contact,
+        bank_info: editStaff.bank_info,
+        status: editStaff.status,
+        role: editStaff.role || 'user'
+      };
+
+      // 写真データがあれば追加
+      if (editStaff.photo && editStaff.photo.startsWith('data:')) {
+        updateData.photo = editStaff.photo;
+      }
+
+      if (editStaff.is_new) {
+        if (!editStaff.email) {
+          showToast("新規登録にはメールアドレスが必須です", "warning");
+          return;
+        }
+        // 新規追加（サーバーアクションで招待と紐付けを行う）
+        const result = await inviteUserAction(editStaff.email, updateData);
+        
+        if (result.error) {
+          console.error("Invite error:", result.error);
+          showToast(`登録に失敗しました: ${result.error}`, "danger");
+        } else if (result.data) {
+          setLocalProfiles(prev => [result.data, ...prev]);
+          showToast("新しい社員を招待・登録しました", "success");
+          setSelectedStaff(null);
+        }
       } else {
-        console.error("Update error:", error);
-        showToast(`更新に失敗しました: ${error?.message || "不明なエラー"}`, "danger");
-      }
-    }
+        // 更新（UPDATE）
+        const { error } = await supabase.from('profiles').update(updateData).eq('id', selectedStaff.id);
 
-    setIsSaving(false);
+        if (!error) {
+          showToast("情報を更新しました", "success");
+          setLocalProfiles(prev => prev.map(p => p.id === selectedStaff.id ? editStaff : p));
+          setSelectedStaff(null);
+        } else {
+          console.error("Update error:", error);
+          showToast(`更新に失敗しました: ${error?.message || "不明なエラー"}`, "danger");
+        }
+      }
+    } catch (err: any) {
+      console.error("Critical update error:", err);
+      showToast(`予期せぬエラーが発生しました: ${err.message || "通信エラー"}`, "danger");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // 退職処理（ステータスを退職に変更）
