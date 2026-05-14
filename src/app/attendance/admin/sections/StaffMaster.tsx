@@ -606,9 +606,38 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
               )}
             </div>
 
-            <div style={{ padding: '25px 40px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '15px' }}>
-              <button onClick={() => setSelectedStaff(null)} style={{ padding: '12px 25px', borderRadius: '12px', background: 'white', border: '1px solid #cbd5e1', fontWeight: 'bold', cursor: 'pointer' }}>キャンセル</button>
-              <button onClick={handleUpdate} disabled={isSaving} style={{ padding: '12px 40px', borderRadius: '12px', background: '#3b82f6', color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>設定を保存</button>
+            <div style={{ padding: '25px 40px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {(!editStaff.is_new && !selectedStaff.id.toString().startsWith('new-')) ? (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={handleRetire} 
+                    disabled={isSaving || editStaff.status === '退職'}
+                    style={{ padding: '10px 20px', borderRadius: '10px', background: 'white', border: '1px solid #cbd5e1', fontWeight: 'bold', cursor: isSaving || editStaff.status === '退職' ? 'not-allowed' : 'pointer', color: '#64748b', opacity: editStaff.status === '退職' ? 0.5 : 1 }}
+                  >
+                    {editStaff.status === '退職' ? '退職済み' : '退職済みにする'}
+                  </button>
+                  <button 
+                    onClick={handleDelete} 
+                    disabled={isSaving}
+                    style={{ padding: '10px 20px', borderRadius: '10px', background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', fontWeight: 'bold', cursor: isSaving ? 'not-allowed' : 'pointer' }}
+                  >
+                    完全削除
+                  </button>
+                </div>
+              ) : <div></div>}
+              <div style={{ display: 'flex', gap: '15px' }}>
+                <button onClick={() => setSelectedStaff(null)} style={{ padding: '12px 25px', borderRadius: '12px', background: 'white', border: '1px solid #cbd5e1', fontWeight: 'bold', cursor: 'pointer' }}>キャンセル</button>
+                <button 
+                  onClick={handleUpdate} 
+                  disabled={isSaving} 
+                  style={{ 
+                    padding: '12px 40px', borderRadius: '12px', background: '#2563eb', color: 'white', border: 'none', 
+                    fontWeight: 'bold', cursor: isSaving ? 'wait' : 'pointer', boxShadow: '0 4px 12px rgba(37,99,235,0.2)' 
+                  }}
+                >
+                  {isSaving ? '保存中...' : (editStaff.is_new ? '新規登録' : '設定を保存')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
