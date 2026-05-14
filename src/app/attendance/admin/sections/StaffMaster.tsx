@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { PREFECTURES } from '../../AdminView';
 import { inviteUserAction } from '@/app/actions/inviteUser';
+import { deleteUserAction } from '@/app/actions/deleteUser';
 
 export default function StaffMaster({ profiles, isDemoMode, supabase, showToast }: any) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -166,6 +167,50 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
       }
     }
 
+    setIsSaving(false);
+  };
+
+  // 退職処理（ステータスを退職に変更）
+  const handleRetire = async () => {
+    if (!selectedStaff || isSaving) return;
+    if (!confirm(`${selectedStaff.full_name} さんを退職済みにしますか？\n（打刻履歴などのデータは保持されます）`)) return;
+
+    setIsSaving(true);
+    const { error } = await supabase.from('profiles').update({ status: '退職' }).eq('id', selectedStaff.id);
+
+    if (!error) {
+      setLocalProfiles(prev => prev.map(p => p.id === selectedStaff.id ? { ...p, status: '退職' } : p));
+      showToast("退職処理が完了しました", "success");
+      setSelectedStaff(null);
+    } else {
+      showToast(`退職処理に失敗しました: ${error.message}`, "danger");
+    }
+    setIsSaving(false);
+  };
+
+  // 完全削除処理（Authアカウント含めDBから抹消）
+  const handleDelete = async () => {
+    if (!selectedStaff || isSaving) return;
+    
+    const isSelf = selectedStaff.id === (await supabase.auth.getUser()).data.user?.id;
+    if (isSelf) {
+      showToast("自分自身のアカウントは削除できません", "warning");
+      return;
+    }
+
+    if (!confirm(`【警告：完全に削除しますか？】\n${selectedStaff.full_name} さんのアカウントと全ての打刻データを完全に消去します。この操作は取り消せません。\n（メールアドレスを解放して再利用する場合にのみ実行してください）`)) return;
+    if (!confirm(`本当によろしいですか？関連する全ての勤怠データが失われます。`)) return;
+
+    setIsSaving(true);
+    const result = await deleteUserAction(selectedStaff.id);
+
+    if (result.success) {
+      setLocalProfiles(prev => prev.filter(p => p.id !== selectedStaff.id));
+      showToast("アカウントを完全に削除しました", "success");
+      setSelectedStaff(null);
+    } else {
+      showToast(`削除に失敗しました: ${result.error}`, "danger");
+    }
     setIsSaving(false);
   };
 
