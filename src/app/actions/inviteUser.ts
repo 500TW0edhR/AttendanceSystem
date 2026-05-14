@@ -3,14 +3,20 @@
 import { createClient } from '@supabase/supabase-js'
 
 export async function inviteUserAction(email: string, profileData: any) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   console.log(`[InviteAction] Starting invitation for: ${email}`);
 
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error(`[InviteAction] Missing environment variables! URL: ${!!supabaseUrl}, Key: ${!!serviceRoleKey}`);
+    return { error: 'サーバーの設定（環境変数）が不完全です。Vercelの設定を確認してください。' };
+  }
+
   // サービスロールキーを使用して特権クライアントを作成
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!, 
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
 
   try {
     // 1. Supabase Auth にユーザーを招待
