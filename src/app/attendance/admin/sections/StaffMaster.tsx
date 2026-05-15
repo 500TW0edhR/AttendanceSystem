@@ -294,7 +294,8 @@ export default function StaffMaster({ profiles, setProfiles, isDemoMode, supabas
       }
 
       const rawStaffList: CsvStaffData[] = lines.slice(1).map(line => {
-        const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ''));
+        // カンマで分割し、各項目からトリミングと隠れた改行コード(\r)を除去
+        const cols = line.split(",").map(c => c.trim().replace(/[\r\n]/g, '').replace(/^"|"$/g, ''));
         return {
           employee_id: cols[0] || '',
           full_name: cols[1] || '',
