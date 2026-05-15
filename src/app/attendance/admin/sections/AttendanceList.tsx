@@ -102,7 +102,7 @@ export default function AttendanceList({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '30px' }}>
         <div>
           <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#1e293b', margin: 0 }}>
-            {isDemoMode ? 'デモ勤怠一覧' : '勤怠一覧管理'}
+            {isDemoMode ? 'デモ勤怠一覧' : '勤怠一覧管理 (Ver.1.0.1)'}
           </h1>
           <p style={{ color: '#64748b', margin: '5px 0 0 0' }}>対象日: <span style={{fontWeight: 'bold', color: '#1e293b'}}>{todayDate?.replace(/-/g, '/')}</span> のリアルタイム稼働状況です。</p>
         </div>
