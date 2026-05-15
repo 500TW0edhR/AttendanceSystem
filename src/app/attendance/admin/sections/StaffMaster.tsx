@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { PREFECTURES } from '../../AdminView';
-import { inviteUserAction } from '@/app/actions/inviteUser';
-import { deleteUserAction } from '@/app/actions/deleteUser';
-import { bulkInviteAction } from '@/app/actions/bulkInvite';
+import { inviteUserAction } from '../../../actions/inviteUser';
+import { deleteUserAction } from '../../../actions/deleteUser';
+import { bulkInviteAction, CsvStaffData } from '../../../actions/bulkInvite';
 
 export default function StaffMaster({ profiles, isDemoMode, supabase, showToast }: any) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -273,23 +273,23 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
         return;
       }
 
-      const rawStaffList = lines.slice(1).map(line => {
+      const rawStaffList: CsvStaffData[] = lines.slice(1).map(line => {
         const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ''));
         return {
-          employee_id: cols[0],
-          full_name: cols[1],
-          kana: cols[2],
-          branch: cols[3],
-          department: cols[4],
-          position: cols[5],
-          employment_type: cols[6],
-          hire_date: cols[7],
-          email: cols[8],
-          dob: cols[9],
-          phone: cols[10],
-          address: cols[11],
-          emergency_contact: cols[12],
-          bank_info: cols[13]
+          employee_id: cols[0] || '',
+          full_name: cols[1] || '',
+          kana: cols[2] || '',
+          branch: cols[3] || '',
+          department: cols[4] || '',
+          position: cols[5] || '',
+          employment_type: cols[6] || '',
+          hire_date: cols[7] || '',
+          email: cols[8] || '',
+          dob: cols[9] || '',
+          phone: cols[10] || '',
+          address: cols[11] || '',
+          emergency_contact: cols[12] || '',
+          bank_info: cols[13] || ''
         };
       });
 
