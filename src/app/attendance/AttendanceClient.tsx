@@ -99,7 +99,7 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
     };
   }, [userId, supabase, todayStr]);
 
-  const toastTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const toastTimerRef = React.useRef<any>(null);
 
   const triggerToast = (msg: string, type: string = 'success') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);

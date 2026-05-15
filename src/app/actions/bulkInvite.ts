@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import crypto from 'crypto'
+import * as crypto from 'crypto'
 
 interface BulkInviteResult {
   successCount: number;
