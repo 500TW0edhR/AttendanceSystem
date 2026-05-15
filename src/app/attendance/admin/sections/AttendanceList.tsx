@@ -83,7 +83,7 @@ export default function AttendanceList({
 
     return { ...p, branch, status, punchIn, punchOut };
   }).filter((r: any) => {
-    const matchesSearch = r.full_name.includes(searchQuery) || r.employee_id.includes(searchQuery);
+    const matchesSearch = (r.full_name || '').includes(searchQuery) || (r.employee_id || '').includes(searchQuery);
     const matchesStatus = filterStatus === 'ALL' || r.status === filterStatus || (filterStatus === 'ALERT' && (r.status === '未打刻' || r.status === '残業超過'));
     const matchesBranch = filterBranch === 'ALL' || r.branch === filterBranch;
     return matchesSearch && matchesStatus && matchesBranch;
