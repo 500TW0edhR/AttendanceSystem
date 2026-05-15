@@ -33,7 +33,7 @@ export interface AttendanceRecord {
   is_demo?: boolean;
 }
 
-export default function AdminView({ profiles = [], allData = [], setAllData, todayDate, isDemoMode, demoShifts = {}, showToast, realAdminId, companyName, updateCompanyName }: any) {
+export default function AdminView({ profiles = [], setProfiles, allData = [], setAllData, todayDate, isDemoMode, demoShifts = {}, showToast, realAdminId, companyName, updateCompanyName }: any) {
   const [activeSec, setActiveSec] = useState('sec-list');
   const [settingName, setSettingName] = useState(companyName || '');
   const [filterBranch, setFilterBranch] = useState('ALL');
@@ -339,7 +339,7 @@ export default function AdminView({ profiles = [], allData = [], setAllData, tod
           />
         );
       case 'sec-staff':
-        return <StaffMaster profiles={augmentedProfiles} isDemoMode={isDemoMode} supabase={supabase} showToast={showToast} />;
+        return <StaffMaster profiles={augmentedProfiles} setProfiles={setProfiles} isDemoMode={isDemoMode} supabase={supabase} showToast={showToast} />;
       case 'sec-report':
         return <ReportAnalysis isDemoMode={isDemoMode} />;
       case 'sec-integration':

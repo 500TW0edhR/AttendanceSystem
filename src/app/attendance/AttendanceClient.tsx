@@ -266,6 +266,7 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
             isDemoMode={isDemoMode}
             realAdminId={userId}
             profiles={profiles}
+            setProfiles={setProfiles}
             allData={allData}
             setAllData={setAllData}
             todayDate={todayStr}

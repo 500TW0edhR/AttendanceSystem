@@ -23,7 +23,7 @@ export interface CsvStaffData {
   bank_info: string;
 }
 
-export default function StaffMaster({ profiles, isDemoMode, supabase, showToast }: any) {
+export default function StaffMaster({ profiles, setProfiles, isDemoMode, supabase, showToast }: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBranch, setFilterBranch] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL');
@@ -226,6 +226,9 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
 
     if (result.success) {
       setLocalProfiles(prev => prev.filter(p => p.id !== selectedStaff.id));
+      if (typeof setProfiles === 'function') {
+        setProfiles((prev: any[]) => prev.filter(p => p.id !== selectedStaff.id));
+      }
       showToast("アカウントを完全に削除しました", "success");
       setSelectedStaff(null);
     } else {
@@ -328,6 +331,9 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
           // 成功データのマージ（画面リロードなし）
           if (result.successfulProfiles.length > 0) {
             setLocalProfiles(prev => [...result.successfulProfiles, ...prev]);
+            if (typeof setProfiles === 'function') {
+              setProfiles((prev: any[]) => [...result.successfulProfiles, ...prev]);
+            }
           }
 
           if (result.errorCount === 0) {
