@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import { randomBytes } from 'node:crypto'
 
 interface CsvStaffData {
   employee_id: string;
@@ -87,7 +86,7 @@ export async function bulkInviteAction(staffList: CsvStaffData[]): Promise<BulkI
       }
 
       // 3. Authユーザーの作成（招待メールは送らない）
-      const randomPassword = randomBytes(16).toString('hex');
+      const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) + 'aA1!';
       const { data: authUser, error: authError } = await adminClient.auth.admin.createUser({
         email: staff.email,
         password: randomPassword,
