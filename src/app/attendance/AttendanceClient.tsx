@@ -70,33 +70,48 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
       }
     };
     
+    // データの取得をデバウンス（連続呼び出しを抑制）
+    let fetchTimeout: NodeJS.Timeout | null = null;
+    const debouncedFetchData = () => {
+      if (fetchTimeout) clearTimeout(fetchTimeout);
+      fetchTimeout = setTimeout(() => {
+        fetchData();
+      }, 500); // 0.5秒以内に次の変更があれば待機
+    };
+    
     fetchData();
 
     // 管理者画面用のリアルタイム更新（強制リロード回避用）
     const channel = supabase
       .channel('client_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, () => {
-        fetchData();
+        debouncedFetchData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        fetchData();
+        debouncedFetchData();
       })
       .subscribe();
 
     return () => {
       isMounted = false;
+      if (fetchTimeout) clearTimeout(fetchTimeout);
       supabase.removeChannel(channel);
     };
   }, [userId, supabase, todayStr]);
 
+  const toastTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
   const triggerToast = (msg: string, type: string = 'success') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    
     setToastMsg(msg);
     setToastType(type);
     setShowToast(true);
-    // エラーは10秒、それ以外は3.5秒で消す
+    
     const duration = type === 'danger' ? 10000 : 3500;
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setShowToast(false);
+      toastTimerRef.current = null;
     }, duration);
   };
 

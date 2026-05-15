@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { PREFECTURES } from '../../AdminView';
 import { inviteUserAction } from '@/app/actions/inviteUser';
 import { deleteUserAction } from '@/app/actions/deleteUser';
+import { bulkInviteAction } from '@/app/actions/bulkInvite';
 
 export default function StaffMaster({ profiles, isDemoMode, supabase, showToast }: any) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -266,10 +267,15 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
         return;
       }
 
-      const newProfiles = lines.slice(1).map(line => {
+      // 50件制限のバリデーション
+      if (lines.length > 51) {
+        showToast("一度にインポートできるのは50名までです", "warning");
+        return;
+      }
+
+      const rawStaffList = lines.slice(1).map(line => {
         const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ''));
         return {
-          id: `csv-${Date.now()}-${Math.random()}`,
           employee_id: cols[0],
           full_name: cols[1],
           kana: cols[2],
@@ -283,61 +289,42 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
           phone: cols[10],
           address: cols[11],
           emergency_contact: cols[12],
-          bank_info: cols[13],
-          status: '在籍',
-          photo: '/demo/p1.png'
+          bank_info: cols[13]
         };
       });
 
       if (isDemoMode) {
-        setLocalProfiles([...newProfiles, ...localProfiles]);
-        showToast(`${newProfiles.length}件のデータをインポートしました（デモ）`, "success");
+        const demoProfiles = rawStaffList.map(s => ({
+          ...s,
+          id: `csv-${Date.now()}-${Math.random()}`,
+          status: '在籍',
+          photo: '/demo/p1.png'
+        }));
+        setLocalProfiles(prev => [...demoProfiles, ...prev]);
+        showToast(`${demoProfiles.length}件のデータをインポートしました（デモ）`, "success");
       } else {
-        // 本番モードではSupabaseへ一括保存
-        const { error } = await supabase.from('profiles').upsert(
-          newProfiles
-            .filter(p => p.full_name || p.employee_id)
-            .map(p => {
-              const data: any = {
-                employee_id: p.employee_id || `E${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-                full_name: p.full_name || '名称未設定',
-                kana: p.kana || '',
-                email: p.email || '',
-                branch: p.branch || '未設定',
-                department: p.department || '未設定',
-                position: p.position || '未設定',
-                employment_type: p.employment_type || '正社員',
-                status: p.status || '在籍',
-                hire_date: p.hire_date || null,
-                dob: p.dob || null,
-                phone: p.phone || '',
-                address: p.address || '',
-                emergency_contact: p.emergency_contact || '',
-                bank_info: p.bank_info || '',
-                role: 'user',
-                is_demo: false,
-                photo: '/demo/p1.png'
-              };
-              // csv-xxx形式のIDはUUID型に合わないのでDBには送らない（DBが自動生成する）
-              return data;
-            }), 
-          { onConflict: 'employee_id' }
-        );
+        setIsSaving(true);
+        try {
+          // サーバーアクションによる一括登録の実行
+          const result = await bulkInviteAction(rawStaffList);
+          
+          // 成功データのマージ（画面リロードなし）
+          if (result.successfulProfiles.length > 0) {
+            setLocalProfiles(prev => [...result.successfulProfiles, ...prev]);
+          }
 
-        if (!error) {
-          showToast(`${newProfiles.length}件のデータをインポートしました`, "success");
-          // Supabaseから最新データを再取得して画面を更新
-          const { data: refreshed } = await supabase.from('profiles').select('*').order('employee_id', { ascending: true });
-          if (refreshed) setLocalProfiles(refreshed.map((p: any) => ({
-            ...p,
-            kana: p.kana || '',
-            photo: '/demo/p1.png',
-            department: p.department || '未設定',
-            position: p.position || '未設定',
-          })));
-        } else {
-          showToast(`インポートに失敗しました: ${error.message}`, "danger");
-          console.error(error);
+          if (result.errorCount === 0) {
+            showToast(`${result.successCount}件のデータをインポートしました`, "success");
+          } else {
+            const errorMsg = result.errors.map(err => `${err.email || '不明'}: ${err.reason}`).join('\n');
+            alert(`インポート結果:\n成功: ${result.successCount}件\n失敗: ${result.errorCount}件\n\n失敗の理由:\n${errorMsg}`);
+            showToast(`${result.successCount}件成功、${result.errorCount}件失敗しました`, result.successCount > 0 ? "warning" : "danger");
+          }
+        } catch (err: any) {
+          console.error("Bulk import failed:", err);
+          showToast("インポート中に予期せぬエラーが発生しました", "danger");
+        } finally {
+          setIsSaving(false);
         }
       }
       if (csvImportRef.current) csvImportRef.current.value = "";

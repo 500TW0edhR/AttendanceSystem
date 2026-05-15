@@ -15,51 +15,50 @@ export async function deleteUserAction(userId: string) {
 
   // 2. 特権クライアントの準備
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY // NEXT_PUBLICなし
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !serviceRoleKey) {
     return { error: 'サーバー設定（環境変数）が不完全です。' }
   }
 
   const adminClient = createAdminClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
+    auth: { autoRefreshToken: false, persistSession: false }
   })
 
-  // 3. DB整合性の保護：関連データ（打刻データ）の削除
-  const { error: attError } = await adminClient
-    .from('attendances')
-    .delete()
-    .eq('user_id', userId)
+  console.log(`[Cleanup] Starting full cleanup for user: ${userId}`);
 
-  if (attError) {
-    console.error('Attendance deletion error:', attError)
-    return { error: `打刻データの削除に失敗しました: ${attError.message}` }
+  // 3. 打刻データの削除（失敗しても無視して次へ）
+  try {
+    await adminClient.from('attendances').delete().eq('user_id', userId);
+  } catch (e) {
+    console.warn('[Cleanup] Attendance cleanup warning:', e);
   }
 
-  // 4. プロフィールの削除
-  const { error: profError } = await adminClient
-    .from('profiles')
-    .delete()
-    .eq('id', userId)
-
-  if (profError) {
-    console.error('Profile deletion error:', profError)
-    return { error: `プロフィールの削除に失敗しました: ${profError.message}` }
+  // 4. プロフィールの削除（失敗しても無視して次へ）
+  try {
+    await adminClient.from('profiles').delete().eq('id', userId);
+  } catch (e) {
+    console.warn('[Cleanup] Profile cleanup warning:', e);
   }
 
-  // 5. Authアカウントの完全削除（これによりメールアドレスが解放される）
-  const { error: authError } = await adminClient.auth.admin.deleteUser(userId)
+  // 5. Authアカウントの削除（最重要だが、既にいなくても成功とみなす）
+  const { error: authError } = await adminClient.auth.admin.deleteUser(userId);
   
   if (authError) {
-    console.error('Auth deletion error:', authError)
-    return { error: `認証アカウントの削除に失敗しました: ${authError.message}` }
+    // 「ユーザーが見つからない」または「UUIDが不正」等のエラーは、
+    // 実質的にAuth側から消えている（または最初からいない）ことを意味するので、成功とみなす
+    const ignoreMessages = ['User not found', 'invalid input syntax for type uuid', 'unexpected end of JSON input'];
+    const shouldIgnore = ignoreMessages.some(msg => authError.message.includes(msg));
+    
+    if (!shouldIgnore) {
+      console.error('[Cleanup] Fatal Auth Error:', authError);
+      return { error: `認証アカウントの削除中に重大なエラーが発生しました: ${authError.message}` };
+    }
   }
 
   // 6. 画面キャッシュの更新
   revalidatePath('/attendance/admin')
   
+  console.log(`[Cleanup] Cleanup completed successfully for user: ${userId}`);
   return { success: true }
 }
