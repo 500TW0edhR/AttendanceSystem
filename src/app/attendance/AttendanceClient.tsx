@@ -71,7 +71,7 @@ export default function AttendanceClient({ userEmail, userId }: { userEmail: str
     };
     
     // データの取得をデバウンス（連続呼び出しを抑制）
-    let fetchTimeout: NodeJS.Timeout | null = null;
+    let fetchTimeout: any = null;
     const debouncedFetchData = () => {
       if (fetchTimeout) clearTimeout(fetchTimeout);
       fetchTimeout = setTimeout(() => {
