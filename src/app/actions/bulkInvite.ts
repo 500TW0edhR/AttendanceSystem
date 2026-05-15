@@ -42,20 +42,31 @@ export async function bulkInviteAction(staffList: any[]): Promise<BulkInviteResu
         continue;
       }
 
-      // 2. 既存チェック（上書き防止）
-      const { data: existingProfile } = await adminClient
+      // 2. 既存チェック（詳細切り分け）
+      const { data: existingByEmail } = await adminClient
         .from('profiles')
-        .select('id, role')
-        .or(`email.eq.${staff.email}${staff.employee_id ? `,employee_id.eq.${staff.employee_id}` : ''}`)
+        .select('id')
+        .eq('email', staff.email)
         .maybeSingle();
 
-      if (existingProfile) {
+      if (existingByEmail) {
         result.errorCount++;
-        result.errors.push({ 
-          email: staff.email, 
-          reason: '既に登録済みのメールアドレスまたは社員番号です（上書き防止のためスキップしました）' 
-        });
+        result.errors.push({ email: staff.email, reason: 'このメールアドレスは既にProfilesテーブルに登録されています' });
         continue;
+      }
+
+      if (staff.employee_id) {
+        const { data: existingById } = await adminClient
+          .from('profiles')
+          .select('id')
+          .eq('employee_id', staff.employee_id)
+          .maybeSingle();
+
+        if (existingById) {
+          result.errorCount++;
+          result.errors.push({ email: staff.email, reason: `社員番号「${staff.employee_id}」は既に他の社員が使用しています` });
+          continue;
+        }
       }
 
       // 3. Authユーザーの作成（招待メールは送らない）
