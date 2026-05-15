@@ -351,7 +351,7 @@ export default function StaffMaster({ profiles, isDemoMode, supabase, showToast 
 
   const filteredProfiles = localProfiles
     .filter(p => displayTab === 'active' ? p.status !== '退職' : p.status === '退職')
-    .filter(p => p.full_name?.includes(searchQuery) || p.employee_id?.includes(searchQuery))
+    .filter(p => (p.full_name || '').includes(searchQuery) || (p.employee_id || '').includes(searchQuery))
     .filter(p => filterBranch === 'ALL' || p.branch === filterBranch)
     .filter(p => filterType === 'ALL' || p.employment_type === filterType);
 
