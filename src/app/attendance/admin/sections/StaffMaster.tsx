@@ -4,7 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { PREFECTURES } from '../../AdminView';
 import { inviteUserAction } from '../../../actions/inviteUser';
 import { deleteUserAction } from '../../../actions/deleteUser';
-import { bulkInviteAction, CsvStaffData } from '../../../actions/bulkInvite';
+import { bulkInviteAction } from '../../../actions/bulkInvite';
+
+export interface CsvStaffData {
+  employee_id: string;
+  full_name: string;
+  kana: string;
+  branch: string;
+  department: string;
+  position: string;
+  employment_type: string;
+  hire_date: string;
+  email: string;
+  dob: string;
+  phone: string;
+  address: string;
+  emergency_contact: string;
+  bank_info: string;
+}
 
 export default function StaffMaster({ profiles, isDemoMode, supabase, showToast }: any) {
   const [searchQuery, setSearchQuery] = useState('');

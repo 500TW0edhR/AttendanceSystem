@@ -3,7 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { randomBytes } from 'node:crypto'
 
-export interface CsvStaffData {
+interface CsvStaffData {
   employee_id: string;
   full_name: string;
   kana: string;
