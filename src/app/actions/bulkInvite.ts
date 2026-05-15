@@ -72,15 +72,24 @@ export async function bulkInviteAction(staffList: CsvStaffData[]): Promise<BulkI
       }
 
       if (staff.employee_id) {
-        const { data: existingById } = await adminClient
+        const { data: existingById, error: idCheckError } = await adminClient
           .from('profiles')
-          .select('id')
+          .select('id, full_name, status')
           .eq('employee_id', staff.employee_id)
           .maybeSingle();
 
+        if (idCheckError) {
+          console.error(`[BulkInvite] ID check error for ${staff.employee_id}:`, idCheckError);
+        }
+
         if (existingById) {
           result.errorCount++;
-          result.errors.push({ email: staff.email, reason: `社員番号「${staff.employee_id}」は既に他の社員が使用しています` });
+          const name = existingById.full_name || '名称未設定のデータ';
+          const status = existingById.status || '不明';
+          result.errors.push({ 
+            email: staff.email, 
+            reason: `社員番号「${staff.employee_id}」は既に「${name}」さん（状態: ${status}）が使用しています。重複は許可されません。` 
+          });
           continue;
         }
       }
